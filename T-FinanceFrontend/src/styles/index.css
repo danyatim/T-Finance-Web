@@ -1,0 +1,93 @@
+:root {
+  font-family: 'Manrope', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: #ffffffde;
+  background: #B3DDF1;
+  
+  background: radial-gradient(50% 21.25% at 50% 100%, #142952 0%, #0D1A35 28.5%, #050A18 100%);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: top;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: 'Manrope', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Адаптивные отступы для body на мобильных */
+@media screen and (max-width: 768px) {
+  body {
+    margin: 0;
+  }
+}
+
+/* iOS Safari - предотвращение горизонтального скролла */
+@supports (-webkit-touch-callout: none) {
+  body {
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: transparent;
+  cursor: pointer;
+  color: #213547;
+  border: none;
+}
+button:hover {
+  color: black;
+}
+button:focus,
+button:focus-visible {
+  color: black;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}

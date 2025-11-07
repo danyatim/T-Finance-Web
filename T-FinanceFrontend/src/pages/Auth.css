@@ -1,0 +1,175 @@
+.auth-container {
+    max-width: 400px;
+    min-width: 300px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #F2F9FF;
+    /* светлый фон для блока */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* чтобы центрировать по горизонтали */
+    text-align: center;
+    font-family: 'Manrope', system-ui, sans-serif;
+}
+
+/* Заголовок */
+h1 {
+    margin-bottom: 2.5rem;
+    color: #138AF2;
+    /* яркий синий */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Метки и инпуты */
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #323334;
+    width: 100%;
+    text-align: left;
+    /* для читаемости */
+}
+
+input {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    border: 1px solid #C0C0C0;
+    font-size: 1rem;
+    outline: none;
+    color: #323334;
+    background-color: transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+/* Убираем появление черной рамки при фокусе */
+input:focus {
+    outline: none;
+    border-color: #8969EC;
+    box-shadow: 0 0 8px rgba(137, 105, 236, 0.3);
+    /* Можно добавить более мягкий эффект */
+}
+
+/* Ошибки */
+.error {
+    color: #E74C3C;
+    font-size: 0.9rem;
+    margin-top: -1rem;
+}
+
+/* Кнопка отправки */
+.submit-btn {
+    width: 100%;
+    background-color: #138AF2;
+    color: #f2f2f2;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.2s;
+}
+
+.submit-btn:focus{
+    outline: none;
+    box-shadow: none;
+}
+
+.submit-btn:active,
+.submit-btn:hover {
+    outline: none;
+    color: #f2f2f2;
+    background-color: #8969EC;
+    box-shadow: 0 4px 12px rgba(137, 105, 236, 0.2);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.login-label {
+    margin-top: 1.5rem;
+    font-size: 1rem;
+}
+
+.login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.password-visible-button {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-25%);
+    background: transparent;
+    outline: none;
+    /* убираем обводку при фокусе и нажатии */
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1.2rem;
+    box-shadow: none;
+}
+
+.password-visible-button:focus,
+.password-visible-button:active {
+    outline: none;
+    box-shadow: none;
+}
+
+.password-visible-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* нажатие -- убрать черную рамку и заменить цвет */
+.toggle-button:focus,
+.toggle-button:active {
+    outline: none;
+    border-color: transparent;
+    /* убрать рамку при фокусе или нажатии */
+    box-shadow: none;
+    /* убрать любые эффекты */
+}
+
+/* При наведении менять цвет */
+.toggle-button:hover {
+    outline: none;
+    border-color: transparent;
+    /* убрать рамку при фокусе или нажатии */
+    color: #8969EC;
+}
+
+.toggle-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Переключатель (переключиться между входом/регистрацией) */
+.toggle-button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    /* добавил паддинги для увеличения "кликабельности" */
+    background: none;
+    border: 2px solid transparent;
+    /* убрать рамку по умолчанию */
+    border-radius: 8px;
+    color: #138AF2;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s, border-color 0.2s;
+    /* добавил плавность */
+}
+

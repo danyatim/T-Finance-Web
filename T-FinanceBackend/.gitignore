@@ -1,0 +1,36 @@
+﻿# Build artifacts
+bin/
+obj/
+out/
+publish/
+*.user
+*.suo
+*.swp
+.vscode
+.vs
+.Migrations
+
+# Rider/VSCode
+.idea/
+.vscode/
+
+# Dotnet tools
+.tools/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+appsettings.Production.json
+secrets.json
+
+# Misc
+TFinanceBackend.http
+Files/*.zip
+/Migrations

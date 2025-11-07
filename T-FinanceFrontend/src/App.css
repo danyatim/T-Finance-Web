@@ -1,0 +1,71 @@
+#root {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Планшеты (iPad и аналогичные) */
+@media screen and (max-width: 1024px) {
+  #root {
+    padding: 1.5rem;
+  }
+}
+
+/* Небольшие планшеты и большие телефоны */
+@media screen and (max-width: 768px) {
+  #root {
+    padding: 1rem;
+    max-width: 100%;
+  }
+}
+
+/* Мобильные устройства (iPhone, Android) */
+@media screen and (max-width: 480px) {
+  #root {
+    padding: 0.75rem;
+    max-width: 100%;
+  }
+}
+
+/* Маленькие мобильные устройства */
+@media screen and (max-width: 360px) {
+  #root {
+    padding: 0.5rem;
+    max-width: 100%;
+  }
+}
+
+/* iOS Safari специфичные настройки */
+@supports (-webkit-touch-callout: none) {
+  #root {
+    /* Поддержка безопасных зон для iPhone X и новее */
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  @media screen and (max-width: 768px) {
+    #root {
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+  }
+
+  @media screen and (max-width: 480px) {
+    #root {
+      padding-left: max(0.75rem, env(safe-area-inset-left));
+      padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+  }
+}
+
+/* Ландшафтная ориентация на мобильных */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  #root {
+    padding: 1rem 0.75rem;
+  }
+}

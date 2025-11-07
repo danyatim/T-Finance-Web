@@ -7,11 +7,10 @@ using TFinanceBackend.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// В проде будем за Nginx ? слушаем локальный порт
-builder.WebHost.UseKestrel()
-    .UseUrls("http://127.0.0.1:5000");
+// Р—Р°РїСѓСЃРєР°РµРј Kestrel, Р°РґСЂРµСЃР° Р±РµСЂСѓС‚СЃСЏ РёР· РїРµСЂРµРјРµРЅРЅС‹С… РѕРєСЂСѓР¶РµРЅРёСЏ (ASPNETCORE_URLS)
+builder.WebHost.UseKestrel();
 
-// DEV CORS (только для разработки)
+// DEV CORS (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", cors =>
@@ -23,7 +22,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// JWT из конфигов
+// JWT пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var issuer = jwtSection["Issuer"];
 var audience = jwtSection["Audience"];
@@ -57,7 +56,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Поднимем SQLite из ConnectionStrings
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ SQLite пїЅпїЅ ConnectionStrings
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=Data/users.db";
 builder.Services.AddDbContext<TFinanceDbContext>(options => options.UseSqlite(connectionString));
 
@@ -66,7 +65,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Учитываем заголовки от Nginx (чтобы видеть https)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ Nginx (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ https)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
@@ -77,11 +76,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseCors("DevCors");
 }
-else
-{
-    // В проде CORS обычно не нужен (один origin за Nginx)
-    app.UseHttpsRedirection();
-}
+// Р’ РїСЂРѕРґР°РєС€РµРЅРµ SSL Р·Р°РІРµСЂС€Р°РµС‚СЃСЏ РЅР° РІРЅРµС€РЅРµРј РїСЂРѕРєСЃРё (Nginx), РїРѕСЌС‚РѕРјСѓ Р±РµР· СЂРµРґРёСЂРµРєС‚Р° РЅР° HTTPS РІРЅСѓС‚СЂРё РєРѕРЅС‚РµР№РЅРµСЂР°.
 
 app.UseAuthentication();
 app.UseAuthorization();

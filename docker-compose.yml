@@ -25,7 +25,7 @@ services:
       context: ./T-FinanceFrontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: /api
+        VITE_API_BASE_URL: ""
     container_name: tfinance-frontend
     depends_on:
       - backend

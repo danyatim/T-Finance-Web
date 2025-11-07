@@ -9,7 +9,7 @@ services:
         BUILD_CONFIGURATION: Release
     container_name: tfinance-backend
     environment:
-      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_ENVIRONMENT=Production
     ports:
       - "8080:8080"

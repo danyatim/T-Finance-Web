@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IO;
 using System.Text;
 using TFinanceBackend.Data;
 
@@ -59,6 +61,12 @@ builder.Services.AddAuthentication(options =>
 // �������� SQLite �� ConnectionStrings
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=Data/users.db";
 builder.Services.AddDbContext<TFinanceDbContext>(options => options.UseSqlite(connectionString));
+
+var dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "Data", "DataProtection");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services.AddDataProtection()
+    .SetApplicationName("TFinanceBackend")
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

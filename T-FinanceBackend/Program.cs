@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using TFinanceBackend.Data;
 
@@ -64,9 +65,28 @@ builder.Services.AddDbContext<TFinanceDbContext>(options => options.UseSqlite(co
 
 var dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "Data", "DataProtection");
 Directory.CreateDirectory(dataProtectionKeysPath);
-builder.Services.AddDataProtection()
+var dataProtection = builder.Services.AddDataProtection()
     .SetApplicationName("TFinanceBackend")
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+
+var certPath = builder.Configuration["DataProtection:CertificatePath"] ?? Environment.GetEnvironmentVariable("DATA_PROTECTION_CERT_PATH");
+if (!string.IsNullOrWhiteSpace(certPath) && File.Exists(certPath))
+{
+    try
+    {
+        var certPassword = builder.Configuration["DataProtection:CertificatePassword"] ?? Environment.GetEnvironmentVariable("DATA_PROTECTION_CERT_PASSWORD");
+        var rawData = File.ReadAllBytes(certPath);
+        X509Certificate2 certificate = string.IsNullOrEmpty(certPassword)
+            ? X509CertificateLoader.LoadPkcs12(rawData, ReadOnlySpan<char>.Empty)
+            : X509CertificateLoader.LoadPkcs12(rawData, certPassword.AsSpan());
+
+        dataProtection.ProtectKeysWithCertificate(certificate);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DataProtection] Failed to load certificate from '{certPath}'. Keys will be stored unencrypted. {ex}");
+    }
+}
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

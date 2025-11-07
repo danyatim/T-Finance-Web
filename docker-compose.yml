@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./TFinanceBackend
+      dockerfile: Dockerfile
+    container_name: tfinance-backend
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+    ports:
+      - "8080:8080"
+    volumes:
+      # persist SQLite DB if needed
+      - backend_data:/app/Data
+    restart: unless-stopped
+    networks:
+      - tfinance
+
+  frontend:
+    build:
+      context: ./T-Finance
+      dockerfile: Dockerfile
+    container_name: tfinance-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - tfinance
+
+networks:
+  tfinance:
+    driver: bridge
+
+volumes:
+  backend_data:
+    driver: local
+
+

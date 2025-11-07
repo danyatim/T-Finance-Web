@@ -17,23 +17,13 @@ RUN dotnet publish "TFinanceBackend.csproj" \
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim AS final
 
-ARG APP_UID=1001
-ARG APP_GID=1001
-
-RUN addgroup --system --gid ${APP_GID} appgroup \
-    && adduser --system --uid ${APP_UID} --ingroup appgroup appuser
-
 WORKDIR /app
 
 COPY --from=build /app/publish ./
-
-RUN chown -R appuser:appgroup /app
 
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 8080
-
-USER appuser
 
 ENTRYPOINT ["dotnet", "TFinanceBackend.dll"]

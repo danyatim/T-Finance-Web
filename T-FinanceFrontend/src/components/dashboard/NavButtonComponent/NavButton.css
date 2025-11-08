@@ -1,0 +1,26 @@
+
+.nav-tab {
+  padding: 0.75rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.nav-tab:hover {
+  color: whitesmoke;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+}
+
+.nav-tab.active {
+  background: rgba(79, 172, 254, 0.2);
+  border-color: #4facfe;
+  box-shadow: 0 0 15px rgba(79, 172, 254, 0.5);
+  color: #4facfe;
+}

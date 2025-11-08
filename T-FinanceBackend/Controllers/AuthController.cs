@@ -10,15 +10,28 @@ using TFinanceBackend.Utility;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
+using System.Linq;
 
 namespace TFinanceBackend.Controllers
 {
     [Route("api/auth")]
     [ApiController]
-    public class AuthController(TFinanceDbContext context, IConfiguration configuration) : ControllerBase
+    public class AuthController : ControllerBase
     {
-        private readonly TFinanceDbContext _context = context;
-        private readonly IConfiguration _configuration = configuration;
+        private readonly TFinanceDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _environment;
+
+        public AuthController(
+            TFinanceDbContext context, 
+            IConfiguration configuration,
+            IWebHostEnvironment environment)
+        {
+            _context = context;
+            _configuration = configuration;
+            _environment = environment;
+        }
 
         public record RegisterRequest(string Email, string Login, string Password);
         public record LoginRequest(string LoginOrEmail, string Password);
@@ -99,14 +112,14 @@ namespace TFinanceBackend.Controllers
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Login == loginOrEmail || u.Email == loginOrEmail);
             
-            // Если не найдено, делаем case-insensitive поиск (для старых записей)
-            if (user == null)
-            {
-                var allUsers = await _context.Users.ToListAsync();
-                user = allUsers.FirstOrDefault(u => 
-                    (u.Login?.Trim().ToLowerInvariant() == loginOrEmail) || 
-                    (u.Email?.Trim().ToLowerInvariant() == loginOrEmail));
-            }
+            //// Если не найдено, делаем case-insensitive поиск (для старых записей)
+            //if (user == null)
+            //{
+            //    var allUsers = await _context.Users.ToListAsync();
+            //    user = allUsers.FirstOrDefault(u => 
+            //        (u.Login?.Trim().ToLowerInvariant() == loginOrEmail) || 
+            //        (u.Email?.Trim().ToLowerInvariant() == loginOrEmail));
+            //}
 
             // Унифицированное сообщение об ошибке для безопасности (не раскрываем, что именно неверно)
             if (user == null)
@@ -151,24 +164,45 @@ namespace TFinanceBackend.Controllers
                     : jwtSection.GetValue<int>("ExpiresInHours", 1);
                 var expiresAt = DateTime.UtcNow.AddHours(expiresInHours);
 
+                // Определяем Secure на основе схемы запроса
+                // Для HTTPS всегда используем Secure=true, для HTTP - false
+                var isHttps = Request.IsHttps || 
+                    (Request.Headers.ContainsKey("X-Forwarded-Proto") && 
+                     Request.Headers["X-Forwarded-Proto"].ToString().Equals("https", StringComparison.OrdinalIgnoreCase));
+                
+                // В Development на HTTP используем Secure=false, на HTTPS - true
+                // В Production всегда Secure=true
+                var isSecure = isHttps || !_environment.IsDevelopment();
+
+                // Для локальной разработки с разными портами используем None (требует Secure=true)
+                // Для продакшена - Strict
+                var sameSite = _environment.IsDevelopment() 
+                    ? (isSecure ? SameSiteMode.None : SameSiteMode.Lax)
+                    : SameSiteMode.Strict;
+                
+                Console.WriteLine($"[Login] HTTPS: {isHttps}, Secure: {isSecure}, SameSite: {sameSite}, Environment: {_environment.EnvironmentName}");
+                Console.WriteLine($"[Login] Origin: {Request.Headers["Origin"]}, Referer: {Request.Headers["Referer"]}");
+
                 // HttpOnly токен
                 Response.Cookies.Append("token", token, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,           // dev по http => false; prod за https => true
-                    SameSite = SameSiteMode.Strict,
+                    Secure = isSecure,
+                    SameSite = sameSite,
                     Path = "/",
-                    Expires = expiresAt
+                    Expires = expiresAt,
+                    Domain = null // Не устанавливаем домен, чтобы работало на localhost
                 });
 
                 // Доп. инфо (username) в отдельной cookie (не HttpOnly, чтобы фронт мог прочитать при необходимости)
                 Response.Cookies.Append("username", user.Login ?? "", new CookieOptions
                 {
                     HttpOnly = false,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    Secure = isSecure,
+                    SameSite = sameSite,
                     Path = "/",
-                    Expires = expiresAt
+                    Expires = expiresAt,
+                    Domain = null // Не устанавливаем домен, чтобы работало на localhost
                 });
 
                 return Ok(new { message = "Успех", username = user.Login });
@@ -182,11 +216,20 @@ namespace TFinanceBackend.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
+            // Определяем Secure на основе схемы запроса
+            var isHttps = Request.IsHttps || 
+                (Request.Headers.ContainsKey("X-Forwarded-Proto") && 
+                 Request.Headers["X-Forwarded-Proto"].ToString().Equals("https", StringComparison.OrdinalIgnoreCase));
+            var isSecure = isHttps || !_environment.IsDevelopment();
+            var sameSite = _environment.IsDevelopment() 
+                ? (isSecure ? SameSiteMode.None : SameSiteMode.Lax)
+                : SameSiteMode.Strict;
+
             // Важно указать те же атрибуты (SameSite/Path/Secure), с которыми куки создавались
             var commonDelete = new CookieOptions
             {
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = isSecure,
+                SameSite = sameSite,
                 Path = "/"
             };
 
@@ -197,8 +240,8 @@ namespace TFinanceBackend.Controllers
             Response.Cookies.Append("token", "", new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = isSecure,
+                SameSite = sameSite,
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(-1)
             });
@@ -206,8 +249,8 @@ namespace TFinanceBackend.Controllers
             Response.Cookies.Append("username", "", new CookieOptions
             {
                 HttpOnly = false,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = isSecure,
+                SameSite = sameSite,
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(-1)
             });
@@ -267,7 +310,13 @@ namespace TFinanceBackend.Controllers
         [HttpGet("validate")]
         public IActionResult ValidateToken()
         {
+            // Логируем все cookies для отладки
+            var allCookies = string.Join(", ", Request.Cookies.Select(c => $"{c.Key}={c.Value}"));
+            Console.WriteLine($"[ValidateToken] Все cookies: {allCookies}");
+            
             var token = Request.Cookies["token"];
+            Console.WriteLine($"[ValidateToken] Токен из cookie: {(string.IsNullOrWhiteSpace(token) ? "ОТСУТСТВУЕТ" : "НАЙДЕН")}");
+            
             if (string.IsNullOrWhiteSpace(token))
             {
                 return Unauthorized(new { message = "Токен отсутствует" });

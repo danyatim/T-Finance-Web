@@ -1,5 +1,5 @@
 const envApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-export const API_BASE_URL = envApiBaseUrl !== undefined ? envApiBaseUrl : 'http://127.0.0.1:5000';
+export const API_BASE_URL = envApiBaseUrl !== undefined ? envApiBaseUrl : "https://localhost:7260"; //'http://127.0.0.1:5000';
 
 // Telegram канал для связи
 const envTelegramChannel = import.meta.env.VITE_TELEGRAM_CHANNEL;

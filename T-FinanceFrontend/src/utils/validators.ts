@@ -6,9 +6,13 @@ export interface ValidationErrors {
 
 export const validateEmail = (email: string): string | undefined => {
   if (!email) {
-    return 'Введите email';
+    return 'Email не может быть пустым';
   }
-  if (!/\S+@\S+\.\S+/.test(email)) {
+  if (email.length > 254) {
+    return 'Email слишком длинный (максимум 254 символа)';
+  }
+  // Более строгая проверка формата email
+  if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/.test(email)) {
     return 'Некорректный формат email';
   }
   return undefined;
@@ -16,17 +20,41 @@ export const validateEmail = (email: string): string | undefined => {
 
 export const validateUsername = (username: string): string | undefined => {
   if (!username) {
-    return 'Введите логин';
+    return 'Логин не может быть пустым';
   }
   if (username.length < 3) {
-    return 'Логин должен быть минимум 3 символа';
+    return 'Логин должен содержать минимум 3 символа';
+  }
+  if (username.length > 50) {
+    return 'Логин не может содержать более 50 символов';
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return 'Логин может содержать только буквы, цифры, дефис и подчеркивание';
   }
   return undefined;
 };
 
 export const validatePassword = (password: string): string | undefined => {
-  if (!password || password.length < 8) {
-    return 'Пароль должен быть минимум 8 символов';
+  if (!password) {
+    return 'Пароль не может быть пустым';
+  }
+  if (password.length < 8) {
+    return 'Пароль должен содержать минимум 8 символов';
+  }
+  if (password.length > 128) {
+    return 'Пароль не может содержать более 128 символов';
+  }
+  if (!/[A-ZА-ЯЁ]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну заглавную букву';
+  }
+  if (!/[a-zа-яё]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну строчную букву';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Пароль должен содержать хотя бы одну цифру';
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    return 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&*()_+-=[]{};\':"\\|,.<>/?';
   }
   return undefined;
 };

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { validateLoginForm, ValidationErrors } from '../utils/validators';
+import { parseValidationError } from '../utils/errorParser';
+import { ApiError } from '../services/api';
 import './Auth.css';
 
 export default function Login() {
@@ -30,14 +32,29 @@ export default function Login() {
     }
 
     setIsLoading(true);
+    setErrors({}); // Очищаем предыдущие ошибки
+    
     try {
       await login({
         LoginOrEmail: formData.username,
         Password: formData.password,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ошибка входа';
-      alert(message);
+      // Парсим ошибки валидации с бэкенда
+      const validationErrors = parseValidationError(error);
+      
+      // Если есть специфичные ошибки для полей, показываем их
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+      } else {
+        // Если не удалось распарсить, показываем общую ошибку
+        const message = error instanceof ApiError 
+          ? (error.response?.message || error.message)
+          : error instanceof Error 
+          ? error.message 
+          : 'Ошибка входа';
+        setErrors({ username: message, password: message });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +76,7 @@ export default function Login() {
             autoComplete="off"
             title=""
             disabled={isLoading}
+            className={errors.username ? 'error-field' : ''}
           />
           {errors.username && <div className="error">{errors.username}</div>}
         </div>
@@ -74,6 +92,7 @@ export default function Login() {
             title=""
             style={{ width: '100%' }}
             disabled={isLoading}
+            className={errors.password ? 'error-field' : ''}
           />
           {errors.password && <label className="error">{errors.password}</label>}
           <button

@@ -8,3 +8,15 @@ ssl/*.pfx
 # Исключаем только README из игнора
 !ssl/README.md
 
+# Переменные окружения с секретами
+.env
+.env.local
+.env.production
+
+# Data Protection сертификаты
+certs/*.pfx
+certs/*.p12
+certs/*.key
+certs/*.crt
+!certs/.gitkeep
+

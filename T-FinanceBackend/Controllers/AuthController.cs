@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
 using TFinanceBackend.Data;
 using TFinanceBackend.Models;
+using TFinanceBackend.Utility;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Diagnostics;
@@ -22,18 +24,48 @@ namespace TFinanceBackend.Controllers
         public record LoginRequest(string LoginOrEmail, string Password);
 
         [HttpPost("register")]
+        [EnableRateLimiting("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            // Валидация Email
+            var emailValidation = EmailValidator.Validate(request.Email);
+            if (!emailValidation.IsValid)
+            {
+                return BadRequest(new { message = emailValidation.ErrorMessage });
+            }
+
+            // Валидация Login
+            var loginValidation = LoginValidator.Validate(request.Login);
+            if (!loginValidation.IsValid)
+            {
+                return BadRequest(new { message = loginValidation.ErrorMessage });
+            }
+
+            // Валидация Password
+            var passwordValidation = PasswordValidator.Validate(request.Password);
+            if (!passwordValidation.IsValid)
+            {
+                return BadRequest(new { message = passwordValidation.ErrorMessage });
+            }
+
+            // Нормализация данных перед проверкой
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+            var normalizedLogin = request.Login.Trim();
+
+            // Проверка на существующего пользователя
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(user => user.Email == request.Email || user.Login == request.Login);
+                .FirstOrDefaultAsync(user => user.Email == normalizedEmail || user.Login == normalizedLogin);
             if (existingUser != null)
-                return BadRequest(new { message = "Пользователь с таким Email или Login уже зарегестрирован." });
+            {
+                // Не раскрываем, какой именно параметр дублируется (безопасность)
+                return BadRequest(new { message = "Пользователь с таким Email или Login уже зарегистрирован." });
+            }
 
             var passwordHasher = new PasswordHasher<User>();
             var user = new User
             {
-                Email = request.Email,
-                Login = request.Login,
+                Email = normalizedEmail,
+                Login = normalizedLogin,
                 PasswordHash = "",
                 IsPremium = false,
             };
@@ -42,22 +74,47 @@ namespace TFinanceBackend.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Пользователь успешно зарегестрирован" });
+            return Ok(new { message = "Пользователь успешно зарегистрирован" });
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Login == request.LoginOrEmail || u.Email == request.LoginOrEmail);
+            // Базовая валидация входных данных
+            if (string.IsNullOrWhiteSpace(request.LoginOrEmail))
+            {
+                return BadRequest(new { message = "Логин или Email обязателен для заполнения" });
+            }
 
+            if (string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new { message = "Пароль обязателен для заполнения" });
+            }
+
+            // Нормализация входных данных
+            var loginOrEmail = request.LoginOrEmail.Trim().ToLowerInvariant();
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == loginOrEmail || u.Email == loginOrEmail);
+
+            // Унифицированное сообщение об ошибке для безопасности (не раскрываем, что именно неверно)
             if (user == null)
-                return Unauthorized(new { message = "Неверный логин" });
+            {
+                // Имитация проверки пароля для защиты от timing attacks
+                var dummyHasher = new PasswordHasher<User>();
+                var dummyUser = new User { PasswordHash = "$2a$10$dummyhash" };
+                dummyHasher.VerifyHashedPassword(dummyUser, dummyUser.PasswordHash, request.Password);
+                
+                return Unauthorized(new { message = "Неверный логин или пароль" });
+            }
 
             var passwordHasher = new PasswordHasher<User>();
             var verificationResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
             if (verificationResult == PasswordVerificationResult.Failed)
-                return Unauthorized(new { message = "Неверный пароль" });
+            {
+                return Unauthorized(new { message = "Неверный логин или пароль" });
+            }
 
             try
             {

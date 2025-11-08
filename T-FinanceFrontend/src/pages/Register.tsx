@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { validateRegisterForm, ValidationErrors } from '../utils/validators';
+import { parseValidationError } from '../utils/errorParser';
+import { ApiError } from '../services/api';
 import './Auth.css';
 
 export default function Register() {
@@ -34,6 +36,8 @@ export default function Register() {
     }
 
     setIsLoading(true);
+    setErrors({}); // Очищаем предыдущие ошибки
+    
     try {
       await register({
         email: formData.email,
@@ -43,8 +47,21 @@ export default function Register() {
       alert('Успешная регистрация');
       navigate('/login');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Ошибка регистрации';
-      alert(message);
+      // Парсим ошибки валидации с бэкенда
+      const validationErrors = parseValidationError(error);
+      
+      // Если есть специфичные ошибки для полей, показываем их
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+      } else {
+        // Если не удалось распарсить, показываем общую ошибку
+        const message = error instanceof ApiError 
+          ? (error.response?.message || error.message)
+          : error instanceof Error 
+          ? error.message 
+          : 'Ошибка регистрации';
+        setErrors({ password: message });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +84,7 @@ export default function Register() {
             autoComplete="off"
             title=""
             disabled={isLoading}
+            className={errors.email ? 'error-field' : ''}
           />
           {errors.email && <label className="error">{errors.email}</label>}
         </div>
@@ -80,6 +98,7 @@ export default function Register() {
             autoComplete="off"
             title=""
             disabled={isLoading}
+            className={errors.username ? 'error-field' : ''}
           />
           {errors.username && <label className="error">{errors.username}</label>}
         </div>
@@ -95,6 +114,7 @@ export default function Register() {
             title=""
             style={{ width: '100%' }}
             disabled={isLoading}
+            className={errors.password ? 'error-field' : ''}
           />
           {errors.password && <label className="error">{errors.password}</label>}
           <button

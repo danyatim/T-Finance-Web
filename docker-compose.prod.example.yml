@@ -1,3 +1,7 @@
+# Пример production конфигурации с переменными окружения для секретов
+# Скопируйте этот файл в .env и заполните реальными значениями
+# Использование: docker compose -f docker-compose.yml --env-file .env up -d
+
 version: "3.9"
 
 services:
@@ -8,26 +12,21 @@ services:
       args:
         BUILD_CONFIGURATION: Release
     container_name: tfinance-backend
-    env_file:
-      - .env
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Production
-      # JWT настройки из .env
-      - JWT_ISSUER=${JWT_ISSUER}
-      - JWT_AUDIENCE=${JWT_AUDIENCE}
-      - JWT_KEY=${JWT_KEY}
-      - JWT_EXPIRES_IN_HOURS=${JWT_EXPIRES_IN_HOURS:-1}
-      # Data Protection настройки из .env
+      # Секреты из переменных окружения
+      - Jwt__Key=${JWT_SECRET_KEY}
+      - Jwt__Issuer=${JWT_ISSUER:-TFinanceBackend}
+      - Jwt__Audience=${JWT_AUDIENCE:-TFinanceFrontend}
+      - Jwt__ExpiresInHours=${JWT_EXPIRES_IN_HOURS:-1}
+      # Опционально: Data Protection сертификат
       - DATA_PROTECTION_CERT_PATH=${DATA_PROTECTION_CERT_PATH:-}
       - DATA_PROTECTION_CERT_PASSWORD=${DATA_PROTECTION_CERT_PASSWORD:-}
     ports:
       - "8080:8080"
     volumes:
-      # persist SQLite DB if needed
       - backend_data:/app/Data
-      # Монтируем Data Protection сертификат (если указан путь)
-      - ./certs:/app/certs:ro
     restart: unless-stopped
     networks:
       - tfinance
@@ -45,8 +44,6 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Монтируем SSL сертификаты из директории рядом с проектом
-      # Сертификаты должны быть в ../ssl/ относительно docker-compose.yml
       - ../ssl:/etc/nginx/ssl:ro
     restart: unless-stopped
     networks:
@@ -59,5 +56,4 @@ networks:
 volumes:
   backend_data:
     driver: local
-
 

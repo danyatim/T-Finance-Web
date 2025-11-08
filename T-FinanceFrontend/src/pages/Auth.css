@@ -59,8 +59,24 @@ input:focus {
 /* Ошибки */
 .error {
     color: #E74C3C;
-    font-size: 0.9rem;
-    margin-top: -1rem;
+    font-size: 0.85rem;
+    margin-top: -0.75rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    text-align: left;
+    font-weight: 500;
+}
+
+/* Выделение полей с ошибками */
+input:invalid,
+input.error-field {
+    border-color: #E74C3C;
+    box-shadow: 0 0 4px rgba(231, 76, 60, 0.2);
+}
+
+input.error-field:focus {
+    border-color: #E74C3C;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.3);
 }
 
 /* Кнопка отправки */

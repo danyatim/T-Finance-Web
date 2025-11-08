@@ -50,7 +50,7 @@ namespace TFinanceBackend.Controllers
 
             // Нормализация данных перед проверкой
             var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-            var normalizedLogin = request.Login.Trim();
+            var normalizedLogin = request.Login.Trim().ToLowerInvariant();
 
             // Проверка на существующего пользователя
             var existingUser = await _context.Users
@@ -95,8 +95,18 @@ namespace TFinanceBackend.Controllers
             // Нормализация входных данных
             var loginOrEmail = request.LoginOrEmail.Trim().ToLowerInvariant();
 
+            // Сначала пробуем точный поиск (для новых записей с нормализованными данными)
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Login == loginOrEmail || u.Email == loginOrEmail);
+            
+            // Если не найдено, делаем case-insensitive поиск (для старых записей)
+            if (user == null)
+            {
+                var allUsers = await _context.Users.ToListAsync();
+                user = allUsers.FirstOrDefault(u => 
+                    (u.Login?.Trim().ToLowerInvariant() == loginOrEmail) || 
+                    (u.Email?.Trim().ToLowerInvariant() == loginOrEmail));
+            }
 
             // Унифицированное сообщение об ошибке для безопасности (не раскрываем, что именно неверно)
             if (user == null)

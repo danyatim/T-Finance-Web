@@ -38,6 +38,7 @@
   align-items: center;
 }
 
+.header-link:focus,
 .header-link {
   background: none;
   border: none;

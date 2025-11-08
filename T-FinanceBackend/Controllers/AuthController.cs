@@ -125,8 +125,11 @@ namespace TFinanceBackend.Controllers
             {
                 var token = GenerateJwtToken(user);
 
+                // Используем ту же логику, что и в Program.cs: приоритет переменным окружения
                 var jwtSection = _configuration.GetSection("Jwt");
-                var expiresInHours = jwtSection.GetValue<int>("ExpiresInHours");
+                var expiresInHours = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRES_IN_HOURS"), out var hours) 
+                    ? hours 
+                    : jwtSection.GetValue<int>("ExpiresInHours", 1);
                 var expiresAt = DateTime.UtcNow.AddHours(expiresInHours);
 
                 // HttpOnly токен
@@ -134,7 +137,7 @@ namespace TFinanceBackend.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,           // dev по http => false; prod за https => true
-                    SameSite = SameSiteMode.None,
+                    SameSite = SameSiteMode.Strict,
                     Path = "/",
                     Expires = expiresAt
                 });
@@ -144,7 +147,7 @@ namespace TFinanceBackend.Controllers
                 {
                     HttpOnly = false,
                     Secure = true,
-                    SameSite = SameSiteMode.None,
+                    SameSite = SameSiteMode.Strict,
                     Path = "/",
                     Expires = expiresAt
                 });
@@ -164,7 +167,7 @@ namespace TFinanceBackend.Controllers
             var commonDelete = new CookieOptions
             {
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = "/"
             };
 
@@ -176,7 +179,7 @@ namespace TFinanceBackend.Controllers
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(-1)
             });
@@ -185,7 +188,7 @@ namespace TFinanceBackend.Controllers
             {
                 HttpOnly = false,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Strict,
                 Path = "/",
                 Expires = DateTime.UtcNow.AddDays(-1)
             });
@@ -196,13 +199,23 @@ namespace TFinanceBackend.Controllers
         private string GenerateJwtToken(User user)
         {
             var jwtSection = _configuration.GetSection("Jwt");
-            var secretKey = jwtSection.GetValue<string>("Key");
-            if (string.IsNullOrEmpty(secretKey))
-                throw new ArgumentException("JWT-секретный ключ не задан или равен null");
-
-            var issuer = jwtSection.GetValue<string>("Issuer");
-            var audience = jwtSection.GetValue<string>("Audience");
-            var expiresInHours = jwtSection.GetValue<int>("ExpiresInHours");
+            
+            // Используем ту же логику, что и в Program.cs: приоритет переменным окружения
+            var secretKey = Environment.GetEnvironmentVariable("JWT_KEY") 
+                ?? jwtSection["Key"] 
+                ?? throw new ArgumentException("JWT-секретный ключ не задан или равен null");
+            
+            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+                ?? jwtSection["Issuer"] 
+                ?? throw new ArgumentException("JWT Issuer не настроен");
+            
+            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+                ?? jwtSection["Audience"] 
+                ?? throw new ArgumentException("JWT Audience не настроен");
+            
+            var expiresInHours = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRES_IN_HOURS"), out var hours) 
+                ? hours 
+                : jwtSection.GetValue<int>("ExpiresInHours", 1);
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -242,12 +255,19 @@ namespace TFinanceBackend.Controllers
             }
 
             var jwtSection = _configuration.GetSection("Jwt");
-            var secretKey = jwtSection.GetValue<string>("Key");
-            if (string.IsNullOrEmpty(secretKey))
-                throw new ArgumentException("JWT-секретный ключ не задан или равен null");
-
-            var issuer = jwtSection.GetValue<string>("Issuer");
-            var audience = jwtSection.GetValue<string>("Audience");
+            
+            // Используем ту же логику, что и в Program.cs: приоритет переменным окружения
+            var secretKey = Environment.GetEnvironmentVariable("JWT_KEY") 
+                ?? jwtSection["Key"] 
+                ?? throw new ArgumentException("JWT-секретный ключ не задан или равен null");
+            
+            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
+                ?? jwtSection["Issuer"] 
+                ?? throw new ArgumentException("JWT Issuer не настроен");
+            
+            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
+                ?? jwtSection["Audience"] 
+                ?? throw new ArgumentException("JWT Audience не настроен");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 

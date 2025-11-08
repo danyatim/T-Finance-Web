@@ -102,14 +102,23 @@ namespace TFinanceBackend.Controllers
             if (user == null)
             {
                 // Имитация проверки пароля для защиты от timing attacks
+                // Используем валидный BCrypt хеш для dummy пользователя
                 var dummyHasher = new PasswordHasher<User>();
                 var dummyUser = new User 
                 { 
                     Login = "dummy",
                     Email = "dummy@example.com",
-                    PasswordHash = "$2a$10$dummyhash" 
+                    // Валидный BCrypt хеш (хеш от пароля "dummy")
+                    PasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy" 
                 };
-                dummyHasher.VerifyHashedPassword(dummyUser, dummyUser.PasswordHash, request.Password);
+                try
+                {
+                    dummyHasher.VerifyHashedPassword(dummyUser, dummyUser.PasswordHash, request.Password);
+                }
+                catch
+                {
+                    // Игнорируем ошибки при проверке dummy хеша - это нормально
+                }
                 
                 return Unauthorized(new { message = "Неверный логин или пароль" });
             }

@@ -49,6 +49,7 @@
   font-family: inherit;
 }
 
+.header-link:active,
 .header-link:hover:not(:disabled) {
   color: #4facfe;
   text-decoration: underline;

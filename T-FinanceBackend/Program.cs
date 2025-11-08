@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.RateLimiting;
 using TFinanceBackend.Data;
+using TFinanceBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

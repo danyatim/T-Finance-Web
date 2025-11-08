@@ -103,7 +103,12 @@ namespace TFinanceBackend.Controllers
             {
                 // Имитация проверки пароля для защиты от timing attacks
                 var dummyHasher = new PasswordHasher<User>();
-                var dummyUser = new User { PasswordHash = "$2a$10$dummyhash" };
+                var dummyUser = new User 
+                { 
+                    Login = "dummy",
+                    Email = "dummy@example.com",
+                    PasswordHash = "$2a$10$dummyhash" 
+                };
                 dummyHasher.VerifyHashedPassword(dummyUser, dummyUser.PasswordHash, request.Password);
                 
                 return Unauthorized(new { message = "Неверный логин или пароль" });

@@ -159,6 +159,10 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+// Регистрация YooKassaService
+builder.Services.AddHttpClient<YooKassaService>();
+builder.Services.AddScoped<YooKassaService>();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

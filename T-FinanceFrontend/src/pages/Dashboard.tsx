@@ -32,21 +32,30 @@ export default function Dashboard() {
   const handlePremium = async () => {
     setIsLoading(true);
     try {
-      await api.post(API_ENDPOINTS.USER.PREMIUM);
-      await logout();
-      alert('Успех');
+      const response = await api.post<{
+        paymentId: string;
+        confirmationUrl: string;
+        status: string;
+      }>(API_ENDPOINTS.PAYMENT.CREATE);
+
+      if (response.confirmationUrl) {
+        // Перенаправляем на страницу оплаты YooKassa
+        window.location.href = response.confirmationUrl;
+      } else {
+        alert('Ошибка: не получена ссылка на оплату');
+      }
     } catch (error: unknown) {
       if (error instanceof ApiError) {
-        if (error.status === 403) {
-          alert('Доступ запрещен. Возможно, у вас уже есть премиум подписка или недостаточно прав.');
+        if (error.status === 400) {
+          alert(error.response?.message || 'Не удалось создать платеж. Возможно, у вас уже есть Premium подписка.');
         } else if (error.status === 401) {
           alert('Сессия истекла. Пожалуйста, войдите снова.');
           await logout();
         } else {
-          alert(error.message || 'Не удалось получить подписку');
+          alert(error.message || 'Не удалось создать платеж');
         }
       } else {
-        const message = error instanceof Error ? error.message : 'Не удалось получить подписку';
+        const message = error instanceof Error ? error.message : 'Не удалось создать платеж';
         alert(message);
       }
     } finally {

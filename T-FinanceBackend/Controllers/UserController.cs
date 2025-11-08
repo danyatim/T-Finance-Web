@@ -11,26 +11,18 @@ namespace TFinanceBackend.Controllers
     [Authorize(Roles = "User")]
     [Route("api/user")]
     [ApiController]
-    public class UserController(TFinanceDbContext context) : ControllerBase
+    public class UserController : ControllerBase
     {
-        private readonly TFinanceDbContext _context = context;
 
         [Authorize(Roles = "User")]
         [HttpPost("premium")]
-        public async Task<IActionResult> GetPremium()
+        [Obsolete("Используйте /api/payment/create для создания платежа")]
+        public IActionResult GetPremium()
         {
-            var login = User.Identity?.Name; // заполняется из ClaimTypes.Name
-            if (string.IsNullOrWhiteSpace(login))
-                return Unauthorized("Не удалось определить пользователя");
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
-            if (user == null) return BadRequest("Пользователя не существует");
-
-            user.IsPremium = true;
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Успех" });
+            // Этот endpoint устарел, используйте /api/payment/create
+            return BadRequest(new { 
+                message = "Этот endpoint устарел. Используйте /api/payment/create для создания платежа через YooKassa" 
+            });
         }
     }
 }

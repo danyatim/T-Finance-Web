@@ -17,6 +17,10 @@ export const API_ENDPOINTS = {
   USER: {
     PREMIUM: '/api/user/premium',
   },
+  PAYMENT: {
+    CREATE: '/api/payment/create',
+    STATUS: '/api/payment/status',
+  },
   FILES: {
     APP: '/api/files/app',
   },

@@ -33,9 +33,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Монтируем SSL сертификаты из локальной директории
-      # Сертификаты должны быть скачаны из Selectel S3/секретов в ./ssl/ на сервере
-      - ./ssl:/etc/nginx/ssl:ro
+      # Монтируем SSL сертификаты из директории рядом с проектом
+      # Сертификаты должны быть в ../ssl/ относительно docker-compose.yml
+      - ../ssl:/etc/nginx/ssl:ro
     restart: unless-stopped
     networks:
       - tfinance

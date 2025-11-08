@@ -2,6 +2,20 @@
 
 Эта директория должна содержать SSL сертификаты для домена `t-finance-web.ru`.
 
+**Важно:** Директория `ssl/` должна находиться рядом с директорией проекта `T-Finance-Web/` (на один уровень выше).
+
+Структура должна быть такой:
+```
+/
+├── T-Finance-Web/          (проект)
+│   ├── docker-compose.yml
+│   ├── T-FinanceBackend/
+│   └── T-FinanceFrontend/
+└── ssl/                    (сертификаты - здесь!)
+    ├── fullchain.pem
+    └── privkey.pem
+```
+
 ## Требуемые файлы:
 
 - `fullchain.pem` - полная цепочка сертификатов (certificate + chain)

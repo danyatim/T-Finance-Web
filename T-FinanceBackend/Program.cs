@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Запускаем Kestrel, адреса берутся из переменных окружения (ASPNETCORE_URLS)
 builder.WebHost.UseKestrel();
 
-// DEV CORS (������ ��� ����������)
+// DEV CORS (  )
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", cors =>
@@ -25,7 +25,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// JWT �� ��������
+// JWT 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var issuer = jwtSection["Issuer"];
 var audience = jwtSection["Audience"];
@@ -59,7 +59,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// �������� SQLite �� ConnectionStrings
+//  SQLite ConnectionStrings
 var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=Data/users.db";
 builder.Services.AddDbContext<TFinanceDbContext>(options => options.UseSqlite(connectionString));
 
@@ -93,7 +93,24 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// ��������� ��������� �� Nginx (����� ������ https)
+// Автоматическое создание базы данных при первом запуске
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<TFinanceDbContext>();
+        // Создаём базу данных и таблицы, если их нет
+        context.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Произошла ошибка при создании базы данных");
+    }
+}
+
+//   Nginx (  https)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto

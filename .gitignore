@@ -1,0 +1,10 @@
+# SSL сертификаты
+ssl/*.pem
+ssl/*.key
+ssl/*.crt
+ssl/*.p12
+ssl/*.pfx
+
+# Исключаем только README из игнора
+!ssl/README.md
+

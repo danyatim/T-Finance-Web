@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { api, ApiError } from '../services/api';
-import { API_ENDPOINTS } from '../utils/constants';
+import { API_ENDPOINTS, TELEGRAM_CHANNEL_URL } from '../utils/constants';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -54,6 +54,10 @@ export default function Dashboard() {
     }
   };
 
+  const handleContact = () => {
+    window.open(TELEGRAM_CHANNEL_URL, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="dashboard-container">
       {/* Header */}
@@ -62,7 +66,9 @@ export default function Dashboard() {
           <h1 className="app-title">T-FinanceWeb</h1>
         </div>
         <div className="header-right">
-          <button className="header-link">Связаться</button>
+          <button className="header-link" onClick={handleContact}>
+            Связаться
+          </button>
           <button className="header-link" onClick={handlePremium} disabled={isLoading}>
             Premium
           </button>

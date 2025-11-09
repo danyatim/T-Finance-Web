@@ -48,97 +48,133 @@ namespace TFinanceBackend.Controllers
         [EnableRateLimiting("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            // Валидация Email
-            var emailValidation = EmailValidator.Validate(request.Email);
-            if (!emailValidation.IsValid)
-            {
-                return BadRequest(new { message = emailValidation.ErrorMessage });
-            }
-
-            // Валидация Login
-            var loginValidation = LoginValidator.Validate(request.Login);
-            if (!loginValidation.IsValid)
-            {
-                return BadRequest(new { message = loginValidation.ErrorMessage });
-            }
-
-            // Валидация Password
-            var passwordValidation = PasswordValidator.Validate(request.Password);
-            if (!passwordValidation.IsValid)
-            {
-                return BadRequest(new { message = passwordValidation.ErrorMessage });
-            }
-
-            // Нормализация данных перед проверкой
-            var normalizedEmail = request.Email.Trim();
-            var normalizedLogin = request.Login.Trim();
-
-            // Проверка на существующего пользователя
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(user => user.Email == normalizedEmail || user.Login == normalizedLogin);
-            if (existingUser != null)
-            {
-                // Не раскрываем, какой именно параметр дублируется (безопасность)
-                return BadRequest(new { message = "Пользователь с таким Email или Login уже зарегистрирован." });
-            }
-
-            var passwordHasher = new PasswordHasher<User>();
-            var user = new User
-            {
-                Email = normalizedEmail,
-                Login = normalizedLogin,
-                PasswordHash = "",
-                IsPremium = false,
-                IsEmailConfirmed = false
-            };
-            user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Генерируем токен подтверждения email
-            var token = Guid.NewGuid().ToString("N");
-            var verificationToken = new EmailVerificationToken
-            {
-                UserId = user.Id,
-                Token = token,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddHours(24), // Токен действителен 24 часа
-                IsUsed = false
-            };
-
-            _context.EmailVerificationTokens.Add(verificationToken);
-            var tokenSaveResult = await _context.SaveChangesAsync();
-            _logger.LogInformation("Токен подтверждения создан для пользователя {UserId}, Token: {Token}, Saved: {Saved}", 
-                user.Id, token, tokenSaveResult);
-
-            // Формируем URL для подтверждения
-            var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL")
-                ?? _configuration["App:BaseUrl"]
-                ?? (Request.IsHttps ? $"https://{Request.Host}" : $"http://{Request.Host}");
-            
-            var verificationLink = $"{baseUrl}/api/auth/verify-email?token={token}";
-            _logger.LogInformation("Ссылка подтверждения сформирована: {Link}", verificationLink);
-
-            // Отправляем письмо с подтверждением
             try
             {
-                await _mailService.SendEmailVerificationAsync(
-                    user.Email,
-                    verificationLink,
-                    user.Login ?? "Пользователь"
-                );
-                _logger.LogInformation("Письмо с подтверждением отправлено на {Email}", user.Email);
+                // Проверка на null request
+                if (request == null)
+                {
+                    _logger.LogWarning("Register: request is null");
+                    return BadRequest(new { message = "Данные регистрации не указаны" });
+                }
+
+                _logger.LogInformation("Register: начало регистрации для Email: {Email}, Login: {Login}", 
+                    request.Email ?? "null", request.Login ?? "null");
+
+                // Валидация Email
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return BadRequest(new { message = "Email обязателен для заполнения" });
+                }
+
+                var emailValidation = EmailValidator.Validate(request.Email);
+                if (!emailValidation.IsValid)
+                {
+                    return BadRequest(new { message = emailValidation.ErrorMessage });
+                }
+
+                // Валидация Login
+                if (string.IsNullOrWhiteSpace(request.Login))
+                {
+                    return BadRequest(new { message = "Логин обязателен для заполнения" });
+                }
+
+                var loginValidation = LoginValidator.Validate(request.Login);
+                if (!loginValidation.IsValid)
+                {
+                    return BadRequest(new { message = loginValidation.ErrorMessage });
+                }
+
+                // Валидация Password
+                if (string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest(new { message = "Пароль обязателен для заполнения" });
+                }
+
+                var passwordValidation = PasswordValidator.Validate(request.Password);
+                if (!passwordValidation.IsValid)
+                {
+                    return BadRequest(new { message = passwordValidation.ErrorMessage });
+                }
+
+                // Нормализация данных перед проверкой
+                var normalizedEmail = request.Email.Trim();
+                var normalizedLogin = request.Login.Trim();
+
+                // Проверка на существующего пользователя
+                var existingUser = await _context.Users
+                    .FirstOrDefaultAsync(user => user.Email == normalizedEmail || user.Login == normalizedLogin);
+                if (existingUser != null)
+                {
+                    _logger.LogWarning("Register: пользователь уже существует - Email: {Email}, Login: {Login}", 
+                        normalizedEmail, normalizedLogin);
+                    // Не раскрываем, какой именно параметр дублируется (безопасность)
+                    return BadRequest(new { message = "Пользователь с таким Email или Login уже зарегистрирован." });
+                }
+
+                var passwordHasher = new PasswordHasher<User>();
+                var user = new User
+                {
+                    Email = normalizedEmail,
+                    Login = normalizedLogin,
+                    PasswordHash = "",
+                    IsPremium = false,
+                    IsEmailConfirmed = false
+                };
+                user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Register: пользователь создан с Id: {UserId}", user.Id);
+
+                // Генерируем токен подтверждения email
+                var token = Guid.NewGuid().ToString("N");
+                var verificationToken = new EmailVerificationToken
+                {
+                    UserId = user.Id,
+                    Token = token,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddHours(24), // Токен действителен 24 часа
+                    IsUsed = false
+                };
+
+                _context.EmailVerificationTokens.Add(verificationToken);
+                var tokenSaveResult = await _context.SaveChangesAsync();
+                _logger.LogInformation("Токен подтверждения создан для пользователя {UserId}, Token: {Token}, Saved: {Saved}", 
+                    user.Id, token, tokenSaveResult);
+
+                // Формируем URL для подтверждения
+                var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL")
+                    ?? _configuration["App:BaseUrl"]
+                    ?? (Request.IsHttps ? $"https://{Request.Host}" : $"http://{Request.Host}");
+                
+                var verificationLink = $"{baseUrl}/api/auth/verify-email?token={token}";
+                _logger.LogInformation("Ссылка подтверждения сформирована: {Link}", verificationLink);
+
+                // Отправляем письмо с подтверждением
+                try
+                {
+                    await _mailService.SendEmailVerificationAsync(
+                        user.Email,
+                        verificationLink,
+                        user.Login ?? "Пользователь"
+                    );
+                    _logger.LogInformation("Письмо с подтверждением отправлено на {Email}", user.Email);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Ошибка при отправке письма с подтверждением на {Email}", user.Email);
+                    // Не прерываем регистрацию, но логируем ошибку
+                }
+
+                return Ok(new { 
+                    message = "Пользователь успешно зарегистрирован. Пожалуйста, проверьте вашу почту для подтверждения email адреса." 
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ошибка при отправке письма с подтверждением на {Email}", user.Email);
-                // Не прерываем регистрацию, но логируем ошибку
+                _logger.LogError(ex, "Критическая ошибка при регистрации пользователя");
+                return StatusCode(500, new { message = "Произошла ошибка при регистрации. Пожалуйста, попробуйте позже." });
             }
-
-            return Ok(new { 
-                message = "Пользователь успешно зарегистрирован. Пожалуйста, проверьте вашу почту для подтверждения email адреса." 
-            });
         }
 
         [HttpPost("login")]

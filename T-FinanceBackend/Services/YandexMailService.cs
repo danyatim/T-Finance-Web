@@ -29,11 +29,11 @@ namespace TFinanceBackend.Services
 
             _smtpUsername = Environment.GetEnvironmentVariable("SMTP_USERNAME")
                 ?? configuration["Smtp:Username"]
-                ?? throw new InvalidOperationException("SMTP Username не настроен");
+                ?? string.Empty;
 
             _smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD")
                 ?? configuration["Smtp:Password"]
-                ?? throw new InvalidOperationException("SMTP Password не настроен");
+                ?? string.Empty;
 
             var fromEmailEnv = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL");
             var fromEmailConfig = configuration["Smtp:FromEmail"];
@@ -43,11 +43,6 @@ namespace TFinanceBackend.Services
                     ? fromEmailConfig
                     : _smtpUsername);
 
-            if (string.IsNullOrWhiteSpace(_fromEmail))
-            {
-                throw new InvalidOperationException("SMTP FromEmail не настроен");
-            }
-
             var fromNameEnv = Environment.GetEnvironmentVariable("SMTP_FROM_NAME");
             var fromNameConfig = configuration["Smtp:FromName"];
             _fromName = !string.IsNullOrWhiteSpace(fromNameEnv)
@@ -55,6 +50,24 @@ namespace TFinanceBackend.Services
                 : (!string.IsNullOrWhiteSpace(fromNameConfig)
                     ? fromNameConfig
                     : "T-Finance");
+        }
+
+        private void ValidateSmtpConfiguration()
+        {
+            if (string.IsNullOrWhiteSpace(_smtpUsername))
+            {
+                throw new InvalidOperationException("SMTP Username не настроен. Установите SMTP_USERNAME в переменных окружения или Smtp:Username в appsettings.json");
+            }
+
+            if (string.IsNullOrWhiteSpace(_smtpPassword))
+            {
+                throw new InvalidOperationException("SMTP Password не настроен. Установите SMTP_PASSWORD в переменных окружения или Smtp:Password в appsettings.json");
+            }
+
+            if (string.IsNullOrWhiteSpace(_fromEmail))
+            {
+                throw new InvalidOperationException("SMTP FromEmail не настроен. Установите SMTP_FROM_EMAIL в переменных окружения или Smtp:FromEmail в appsettings.json");
+            }
         }
 
         public async Task SendEmailVerificationAsync(string toEmail, string verificationLink, string username)
@@ -110,15 +123,13 @@ namespace TFinanceBackend.Services
         {
             try
             {
+                // Проверяем конфигурацию SMTP перед отправкой
+                ValidateSmtpConfiguration();
+
                 // Валидация входных параметров
                 if (string.IsNullOrWhiteSpace(toEmail))
                 {
                     throw new ArgumentException("Email адрес получателя не может быть пустым", nameof(toEmail));
-                }
-
-                if (string.IsNullOrWhiteSpace(_fromEmail))
-                {
-                    throw new InvalidOperationException("SMTP FromEmail не настроен");
                 }
 
                 using var client = new SmtpClient(_smtpHost, _smtpPort)

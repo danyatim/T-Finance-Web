@@ -39,12 +39,12 @@ export default function Register() {
     setErrors({}); // Очищаем предыдущие ошибки
     
     try {
-      await register({
-        email: formData.email,
-        login: formData.username,
-        password: formData.password,
+      const response = await register({
+            email: formData.email,
+            login: formData.username,
+            password: formData.password,
       });
-      alert('Успешная регистрация');
+      alert(response.message);
       navigate('/login');
     } catch (error: unknown) {
       // Парсим ошибки валидации с бэкенда

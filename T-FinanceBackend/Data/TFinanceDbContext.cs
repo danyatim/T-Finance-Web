@@ -7,6 +7,7 @@ namespace TFinanceBackend.Data
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,19 @@ namespace TFinanceBackend.Data
                 entity.Property(e => e.Currency).IsRequired();
                 entity.Property(e => e.CreatedAt).IsRequired();
                 entity.HasIndex(e => e.YooKassaPaymentId).IsUnique();
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<EmailVerificationToken>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.HasIndex(e => e.Token).IsUnique();
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)

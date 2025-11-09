@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using System.Text;
 using TFinanceBackend.Data;
 using TFinanceBackend.Models;
 using TFinanceBackend.Utility;
+using TFinanceBackend.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Diagnostics;
@@ -22,15 +24,21 @@ namespace TFinanceBackend.Controllers
         private readonly TFinanceDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
+        private readonly YandexMailService _mailService;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             TFinanceDbContext context, 
             IConfiguration configuration,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            YandexMailService mailService,
+            ILogger<AuthController> logger)
         {
             _context = context;
             _configuration = configuration;
             _environment = environment;
+            _mailService = mailService;
+            _logger = logger;
         }
 
         public record RegisterRequest(string Email, string Login, string Password);
@@ -62,8 +70,8 @@ namespace TFinanceBackend.Controllers
             }
 
             // Нормализация данных перед проверкой
-            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-            var normalizedLogin = request.Login.Trim().ToLowerInvariant();
+            var normalizedEmail = request.Email.Trim();
+            var normalizedLogin = request.Login.Trim();
 
             // Проверка на существующего пользователя
             var existingUser = await _context.Users
@@ -81,13 +89,56 @@ namespace TFinanceBackend.Controllers
                 Login = normalizedLogin,
                 PasswordHash = "",
                 IsPremium = false,
+                IsEmailConfirmed = false
             };
             user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Пользователь успешно зарегистрирован" });
+            // Генерируем токен подтверждения email
+            var token = Guid.NewGuid().ToString("N");
+            var verificationToken = new EmailVerificationToken
+            {
+                UserId = user.Id,
+                Token = token,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24), // Токен действителен 24 часа
+                IsUsed = false
+            };
+
+            _context.EmailVerificationTokens.Add(verificationToken);
+            var tokenSaveResult = await _context.SaveChangesAsync();
+            _logger.LogInformation("Токен подтверждения создан для пользователя {UserId}, Token: {Token}, Saved: {Saved}", 
+                user.Id, token, tokenSaveResult);
+
+            // Формируем URL для подтверждения
+            var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL")
+                ?? _configuration["App:BaseUrl"]
+                ?? (Request.IsHttps ? $"https://{Request.Host}" : $"http://{Request.Host}");
+            
+            var verificationLink = $"{baseUrl}/api/auth/verify-email?token={token}";
+            _logger.LogInformation("Ссылка подтверждения сформирована: {Link}", verificationLink);
+
+            // Отправляем письмо с подтверждением
+            try
+            {
+                await _mailService.SendEmailVerificationAsync(
+                    user.Email,
+                    verificationLink,
+                    user.Login ?? "Пользователь"
+                );
+                _logger.LogInformation("Письмо с подтверждением отправлено на {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке письма с подтверждением на {Email}", user.Email);
+                // Не прерываем регистрацию, но логируем ошибку
+            }
+
+            return Ok(new { 
+                message = "Пользователь успешно зарегистрирован. Пожалуйста, проверьте вашу почту для подтверждения email адреса." 
+            });
         }
 
         [HttpPost("login")]
@@ -106,20 +157,11 @@ namespace TFinanceBackend.Controllers
             }
 
             // Нормализация входных данных
-            var loginOrEmail = request.LoginOrEmail.Trim().ToLowerInvariant();
+            var loginOrEmail = request.LoginOrEmail.Trim();
 
             // Сначала пробуем точный поиск (для новых записей с нормализованными данными)
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Login == loginOrEmail || u.Email == loginOrEmail);
-            
-            //// Если не найдено, делаем case-insensitive поиск (для старых записей)
-            //if (user == null)
-            //{
-            //    var allUsers = await _context.Users.ToListAsync();
-            //    user = allUsers.FirstOrDefault(u => 
-            //        (u.Login?.Trim().ToLowerInvariant() == loginOrEmail) || 
-            //        (u.Email?.Trim().ToLowerInvariant() == loginOrEmail));
-            //}
 
             // Унифицированное сообщение об ошибке для безопасности (не раскрываем, что именно неверно)
             if (user == null)
@@ -151,6 +193,14 @@ namespace TFinanceBackend.Controllers
             if (verificationResult == PasswordVerificationResult.Failed)
             {
                 return Unauthorized(new { message = "Неверный логин или пароль" });
+            }
+
+            // Проверяем, подтвержден ли email
+            if (!user.IsEmailConfirmed)
+            {
+                return Unauthorized(new { 
+                    message = "Email адрес не подтвержден. Пожалуйста, проверьте вашу почту и перейдите по ссылке для подтверждения." 
+                });
             }
 
             try
@@ -361,6 +411,79 @@ namespace TFinanceBackend.Controllers
             catch
             {
                 return Unauthorized(new { message = "Токен недействителен" });
+            }
+        }
+
+        // Подтверждение email адреса
+        [HttpGet("verify-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+        {
+            var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")
+                ?? _configuration["App:FrontendUrl"]
+                ?? "https://t-finance-web.ru";
+
+            _logger.LogInformation("VerifyEmail вызван с токеном: {Token}", token ?? "null");
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                _logger.LogWarning("Токен не указан при подтверждении email");
+                return Redirect($"{frontendUrl}/login?error=token_missing");
+            }
+
+            try
+            {
+                var verificationToken = await _context.EmailVerificationTokens
+                    .Include(t => t.User)
+                    .FirstOrDefaultAsync(t => t.Token == token && !t.IsUsed);
+
+                _logger.LogInformation("Токен найден: {Found}, IsUsed: {IsUsed}", 
+                    verificationToken != null, 
+                    verificationToken?.IsUsed ?? false);
+
+                if (verificationToken == null)
+                {
+                    _logger.LogWarning("Токен не найден или уже использован: {Token}", token);
+                    return Redirect($"{frontendUrl}/login?error=token_invalid");
+                }
+
+                if (verificationToken.ExpiresAt < DateTime.UtcNow)
+                {
+                    _logger.LogWarning("Токен истек: {Token}, ExpiresAt: {ExpiresAt}, Now: {Now}", 
+                        token, verificationToken.ExpiresAt, DateTime.UtcNow);
+                    return Redirect($"{frontendUrl}/login?error=token_expired");
+                }
+
+                if (verificationToken.User == null)
+                {
+                    _logger.LogError("Пользователь не найден для токена: {Token}, UserId: {UserId}", 
+                        token, verificationToken.UserId);
+                    return Redirect($"{frontendUrl}/login?error=user_not_found");
+                }
+
+                // Подтверждаем email
+                var oldIsEmailConfirmed = verificationToken.User.IsEmailConfirmed;
+                verificationToken.User.IsEmailConfirmed = true;
+                verificationToken.IsUsed = true;
+
+                _context.Users.Update(verificationToken.User);
+                _context.EmailVerificationTokens.Update(verificationToken);
+                
+                var savedChanges = await _context.SaveChangesAsync();
+                _logger.LogInformation("Изменения сохранены: {SavedChanges}, Email был подтвержден: {WasConfirmed}, теперь: {NowConfirmed}", 
+                    savedChanges, oldIsEmailConfirmed, verificationToken.User.IsEmailConfirmed);
+
+                _logger.LogInformation("Email подтвержден для пользователя {UserId}, Email: {Email}", 
+                    verificationToken.UserId, verificationToken.User.Email);
+
+                // Редирект на страницу логина с параметром успешного подтверждения
+                _logger.LogInformation("Выполняется редирект на: {Url}", $"{frontendUrl}/login?verified=true");
+                return Redirect($"{frontendUrl}/login?verified=true");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при подтверждении email с токеном: {Token}", token);
+                return Redirect($"{frontendUrl}/login?error=server_error");
             }
         }
     }

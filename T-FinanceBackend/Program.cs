@@ -169,6 +169,9 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddHttpClient<YooKassaService>();
 builder.Services.AddScoped<YooKassaService>();
 
+// Регистрация YandexMailService
+builder.Services.AddScoped<YandexMailService>();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 

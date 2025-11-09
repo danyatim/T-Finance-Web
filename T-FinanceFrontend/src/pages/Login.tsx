@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { validateLoginForm, ValidationErrors } from '../utils/validators';
 import { parseValidationError } from '../utils/errorParser';
@@ -8,11 +8,35 @@ import './Auth.css';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Обработка параметров URL
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const error = searchParams.get('error');
+
+    if (verified === 'true') {
+      setSuccessMessage('Email успешно подтвержден! Теперь вы можете войти в систему.');
+      // Очищаем параметр из URL
+      navigate('/login', { replace: true });
+    } else if (error) {
+      const errorMessages: Record<string, string> = {
+        token_missing: 'Токен подтверждения не указан.',
+        token_invalid: 'Неверный или уже использованный токен подтверждения.',
+        token_expired: 'Срок действия токена истек. Пожалуйста, запросите новую ссылку для подтверждения.',
+        user_not_found: 'Пользователь не найден.',
+      };
+      setErrors({ username: errorMessages[error] || 'Ошибка подтверждения email.' });
+      // Очищаем параметр из URL
+      navigate('/login', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -65,6 +89,19 @@ export default function Login() {
   return (
     <div className="auth-container">
       <h1>Вход</h1>
+      {successMessage && (
+        <div style={{
+          padding: '12px',
+          marginBottom: '20px',
+          backgroundColor: '#d4edda',
+          color: '#155724',
+          border: '1px solid #c3e6cb',
+          borderRadius: '4px',
+          textAlign: 'center'
+        }}>
+          {successMessage}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="login-input">Логин:</label>

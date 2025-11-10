@@ -9,7 +9,7 @@ using TFinanceBackend.Data;
 namespace TFinanceBackend.Controllers
 {
     [Authorize(Roles = "User")]
-    [Route("api/user")]
+    [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {

@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace TFinanceBackend.Controllers
 {
-    [Route("api/payment")]
+    [Route("api/[controller]")]
     [ApiController]
     public class PaymentController : ControllerBase
     {

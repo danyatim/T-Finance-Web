@@ -17,7 +17,7 @@ using System.Linq;
 
 namespace TFinanceBackend.Controllers
 {
-    [Route("api/auth")]
+    [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -126,45 +126,8 @@ namespace TFinanceBackend.Controllers
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Register: пользователь создан с Id: {UserId}", user.Id);
 
-                // Генерируем токен подтверждения email
-                var token = Guid.NewGuid().ToString("N");
-                var verificationToken = new EmailVerificationToken
-                {
-                    UserId = user.Id,
-                    Token = token,
-                    CreatedAt = DateTime.UtcNow,
-                    ExpiresAt = DateTime.UtcNow.AddHours(24), // Токен действителен 24 часа
-                    IsUsed = false
-                };
-
-                _context.EmailVerificationTokens.Add(verificationToken);
-                var tokenSaveResult = await _context.SaveChangesAsync();
-                _logger.LogInformation("Токен подтверждения создан для пользователя {UserId}, Token: {Token}, Saved: {Saved}", 
-                    user.Id, token, tokenSaveResult);
-
-                // Формируем URL для подтверждения
-                var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL")
-                    ?? _configuration["App:BaseUrl"]
-                    ?? (Request.IsHttps ? $"https://{Request.Host}" : $"http://{Request.Host}");
-                
-                var verificationLink = $"{baseUrl}/api/auth/verify-email?token={token}";
-                _logger.LogInformation("Ссылка подтверждения сформирована: {Link}", verificationLink);
-
                 // Отправляем письмо с подтверждением
-                try
-                {
-                    await _mailService.SendEmailVerificationAsync(
-                        user.Email,
-                        verificationLink,
-                        user.Login ?? "Пользователь"
-                    );
-                    _logger.LogInformation("Письмо с подтверждением отправлено на {Email}", user.Email);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Ошибка при отправке письма с подтверждением на {Email}", user.Email);
-                    // Не прерываем регистрацию, но логируем ошибку
-                }
+                SendEmailVerifyAsync(user);
 
                 return Ok(new { 
                     message = "Пользователь успешно зарегистрирован. Пожалуйста, проверьте вашу почту для подтверждения email адреса." 
@@ -174,6 +137,49 @@ namespace TFinanceBackend.Controllers
             {
                 _logger.LogError(ex, "Критическая ошибка при регистрации пользователя");
                 return StatusCode(500, new { message = "Произошла ошибка при регистрации. Пожалуйста, попробуйте позже." });
+            }
+        }
+
+        private async void SendEmailVerifyAsync(User user)
+        {
+            // Генерируем токен подтверждения email
+            var token = Guid.NewGuid().ToString("N");
+            var verificationToken = new EmailVerificationToken
+            {
+                UserId = user.Id,
+                Token = token,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddHours(24), // Токен действителен 24 часа
+                IsUsed = false
+            };
+
+            _context.EmailVerificationTokens.Add(verificationToken);
+            var tokenSaveResult = await _context.SaveChangesAsync();
+            _logger.LogInformation("Токен подтверждения создан для пользователя {UserId}, Token: {Token}, Saved: {Saved}",
+                user.Id, token, tokenSaveResult);
+
+            // Формируем URL для подтверждения
+            var baseUrl = Environment.GetEnvironmentVariable("APP_BASE_URL")
+                ?? _configuration["App:BaseUrl"]
+                ?? (Request.IsHttps ? $"https://{Request.Host}" : $"http://{Request.Host}");
+
+            var verificationLink = $"{baseUrl}/api/auth/verify-email?token={token}";
+            _logger.LogInformation("Ссылка подтверждения сформирована: {Link}", verificationLink);
+
+            // Отправляем письмо с подтверждением
+            try
+            {
+                await _mailService.SendEmailVerificationAsync(
+                    user.Email,
+                    verificationLink,
+                    user.Login ?? "Пользователь"
+                );
+                _logger.LogInformation("Письмо с подтверждением отправлено на {Email}", user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при отправке письма с подтверждением на {Email}", user.Email);
+                // Не прерываем регистрацию, но логируем ошибку
             }
         }
 
@@ -234,6 +240,8 @@ namespace TFinanceBackend.Controllers
             // Проверяем, подтвержден ли email
             if (!user.IsEmailConfirmed)
             {
+                _logger.LogError("Email адрес: {Email}. Статус: не подтвержден.", user.Email);
+
                 return Unauthorized(new { 
                     message = "Email адрес не подтвержден. Пожалуйста, проверьте вашу почту и перейдите по ссылке для подтверждения." 
                 });
@@ -398,9 +406,12 @@ namespace TFinanceBackend.Controllers
         {
             // Логируем все cookies для отладки
             var allCookies = string.Join(", ", Request.Cookies.Select(c => $"{c.Key}={c.Value}"));
+
+            _logger.LogInformation("[ValidateToken] Все cookies: {allCookies}", allCookies);
             Console.WriteLine($"[ValidateToken] Все cookies: {allCookies}");
             
             var token = Request.Cookies["token"];
+            _logger.LogInformation("[ValidateToken] Токен из cookie: {isToken}", (string.IsNullOrWhiteSpace(token) ? "ОТСУТСТВУЕТ" : "НАЙДЕН"));
             Console.WriteLine($"[ValidateToken] Токен из cookie: {(string.IsNullOrWhiteSpace(token) ? "ОТСУТСТВУЕТ" : "НАЙДЕН")}");
             
             if (string.IsNullOrWhiteSpace(token))
@@ -487,6 +498,8 @@ namespace TFinanceBackend.Controllers
                 {
                     _logger.LogWarning("Токен истек: {Token}, ExpiresAt: {ExpiresAt}, Now: {Now}", 
                         token, verificationToken.ExpiresAt, DateTime.UtcNow);
+
+                    SendEmailVerifyAsync(verificationToken.User);
                     return Redirect($"{frontendUrl}/login?error=token_expired");
                 }
 

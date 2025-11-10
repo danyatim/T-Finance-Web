@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace TFinanceBackend.Controllers
 {
-    [Route("api/files")]
+    [Route("api/[controller]")]
     [ApiController]
     public class FilesController : ControllerBase
     {

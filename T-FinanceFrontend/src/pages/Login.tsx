@@ -4,6 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { validateLoginForm, ValidationErrors } from '../utils/validators';
 import { parseValidationError } from '../utils/errorParser';
 import { ApiError } from '../services/api';
+
+import LoginMessageBox from '@/components/auth/LoginMessageBox/LoginMessage'
 import './Auth.css';
 
 export default function Login() {
@@ -14,7 +16,7 @@ export default function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [loginMessage, setLoginMessage] = useState<string | null>(null);
 
   // Обработка параметров URL
   useEffect(() => {
@@ -22,14 +24,14 @@ export default function Login() {
     const error = searchParams.get('error');
 
     if (verified === 'true') {
-      setSuccessMessage('Email успешно подтвержден! Теперь вы можете войти в систему.');
+      setLoginMessage('Email успешно подтвержден! Теперь вы можете войти в систему.');
       // Очищаем параметр из URL
       navigate('/login', { replace: true });
     } else if (error) {
       const errorMessages: Record<string, string> = {
         token_missing: 'Токен подтверждения не указан.',
         token_invalid: 'Неверный или уже использованный токен подтверждения.',
-        token_expired: 'Срок действия токена истек. Пожалуйста, запросите новую ссылку для подтверждения.',
+        token_expired: 'Срок действия токена истек. На ваша почту отправлено новое поддверждение',
         user_not_found: 'Пользователь не найден.',
       };
       setErrors({ username: errorMessages[error] || 'Ошибка подтверждения email.' });
@@ -66,6 +68,9 @@ export default function Login() {
     } catch (error: unknown) {
       // Парсим ошибки валидации с бэкенда
       const validationErrors = parseValidationError(error);
+      if (error instanceof ApiError){
+        setLoginMessage(error.message)
+      }
       
       // Если есть специфичные ошибки для полей, показываем их
       if (Object.keys(validationErrors).length > 0) {
@@ -77,6 +82,7 @@ export default function Login() {
           : error instanceof Error 
           ? error.message 
           : 'Ошибка входа';
+        setLoginMessage(message)
         setErrors({ username: message, password: message });
       }
     } finally {
@@ -89,19 +95,7 @@ export default function Login() {
   return (
     <div className="auth-container">
       <h1>Вход</h1>
-      {successMessage && (
-        <div style={{
-          padding: '12px',
-          marginBottom: '20px',
-          backgroundColor: '#d4edda',
-          color: '#155724',
-          border: '1px solid #c3e6cb',
-          borderRadius: '4px',
-          textAlign: 'center'
-        }}>
-          {successMessage}
-        </div>
-      )}
+      {loginMessage && (<LoginMessageBox loginMessage={loginMessage} />)}
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="login-input">Логин:</label>

@@ -74,42 +74,42 @@ namespace TFinanceBackend.Services
         {
             var subject = "Подтверждение email адреса - T-Finance-Web";
             var body = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""utf-8"">
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f9f9f9; }}
-        .button {{ display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-        .footer {{ padding: 20px; text-align: center; color: #666; font-size: 12px; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>T-Finance-Web</h1>
-        </div>
-        <div class=""content"">
-            <h2>Здравствуйте, {username}!</h2>
-            <p>Спасибо за регистрацию в T-Finance. Для завершения регистрации необходимо подтвердить ваш email адрес.</p>
-            <p>Пожалуйста, нажмите на кнопку ниже для подтверждения:</p>
-            <p style=""text-align: center;"">
-                <a href=""{verificationLink}"" class=""button"">Подтвердить email</a>
-            </p>
-            <p>Или скопируйте и вставьте следующую ссылку в браузер:</p>
-            <p style=""word-break: break-all; color: #0066cc;"">{verificationLink}</p>
-            <p><strong>Важно:</strong> Ссылка действительна в течение 24 часов.</p>
-            <p>Если вы не регистрировались в T-Finance, просто проигнорируйте это письмо.</p>
-        </div>
-        <div class=""footer"">
-            <p>&copy; {DateTime.Now.Year} T-Finance. Все права защищены.</p>
-        </div>
-    </div>
-</body>
-</html>";
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset=""utf-8"">
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; }}
+                    .button {{ display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                    .footer {{ padding: 20px; text-align: center; color: #666; font-size: 12px; }}
+                </style>
+            </head>
+            <body>
+                <div class=""container"">
+                    <div class=""header"">
+                        <h1>T-Finance-Web</h1>
+                    </div>
+                    <div class=""content"">
+                        <h2>Здравствуйте, {username}!</h2>
+                        <p>Спасибо за регистрацию в T-Finance. Для завершения регистрации необходимо подтвердить ваш email адрес.</p>
+                        <p>Пожалуйста, нажмите на кнопку ниже для подтверждения:</p>
+                        <p style=""text-align: center;"">
+                            <a href=""{verificationLink}"" class=""button"">Подтвердить email</a>
+                        </p>
+                        <p>Или скопируйте и вставьте следующую ссылку в браузер:</p>
+                        <p style=""word-break: break-all; color: #0066cc;"">{verificationLink}</p>
+                        <p><strong>Важно:</strong> Ссылка действительна в течение 24 часов.</p>
+                        <p>Если вы не регистрировались в T-Finance, просто проигнорируйте это письмо.</p>
+                    </div>
+                    <div class=""footer"">
+                        <p>&copy; {DateTime.Now.Year} T-Finance. Все права защищены.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
 
             if (string.IsNullOrWhiteSpace(toEmail))
             {

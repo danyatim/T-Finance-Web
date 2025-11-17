@@ -103,6 +103,11 @@ export default function Dashboard() {
     } 
   }
 
+  useEffect(() => {
+    handleBankAccounts()
+    console.log("useEffect")
+  }, [])
+
   const handleContact = () => {
     window.open(TELEGRAM_CHANNEL_URL, '_blank', 'noopener,noreferrer');
   };

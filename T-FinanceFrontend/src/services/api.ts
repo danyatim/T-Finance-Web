@@ -46,15 +46,12 @@ export const api = {
       },
     })
     
-    console.log(`[API] ${options.method || 'GET'} ${endpoint} - Status: ${response.status}`);
-    
     if (!response.ok) {
       let errorMessage = `HTTP Error: ${response.status}`;
       let errorData: ApiResponse | undefined;
 
       try {
         const text = await response.text();
-        console.log(`[API] Error response body:`, text);
         if (text) {
           errorData = JSON.parse(text);
           errorMessage = errorData?.message || errorMessage;
@@ -80,10 +77,8 @@ export const api = {
 
     try {
       const jsonData = await response.json();
-      console.log(`[API] Response data:`, jsonData);
       return jsonData;
     } catch (error) {
-      console.error(`[API] Failed to parse JSON:`, error);
       return {} as T;
     }
   },

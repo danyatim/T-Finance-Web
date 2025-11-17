@@ -1,11 +1,11 @@
 import React from 'react';
 import './LoginMessage.css';
 
-interface FinancialCardProps {
+interface LoginMessageProps {
     loginMessage: string
 }
 
-const FinancialCard: React.FC<FinancialCardProps> = ({loginMessage}) =>{
+const FinancialCard: React.FC<LoginMessageProps> = ({loginMessage}) =>{
 
     return (
         <div className='loginMessageBox'>

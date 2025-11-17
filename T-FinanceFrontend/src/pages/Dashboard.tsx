@@ -1,16 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { api, ApiError } from '../services/api';
+import { api, ApiError, BankAccount } from '../services/api';
 import { API_ENDPOINTS, TELEGRAM_CHANNEL_URL } from '../utils/constants';
 import NavButton from '@/components/dashboard/NavButtonComponent/NavButton';
 import FinancialCard from '@/components/dashboard/FinancialCardComponent/FinancialCard';
 import HeaderLink from '@/components/dashboard/LinkComponent/HeaderLink';
+import AccountsCard from '@/components/dashboard/AccountsCardComponent/AccountsCard'
 import './Dashboard.css';
 
 export default function Dashboard() {
   const { logout, username } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Главная');
+  const [revenue, setRevenue] = useState(453.3);
+  const [expenses, setExpenses] = useState(4324.45);
+  const [profit, setProfit] = useState(342342.76);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
 
   const handleDownloadZip = async () => {
     setIsLoading(true);
@@ -74,6 +79,30 @@ export default function Dashboard() {
     }
   };
 
+  const handleBankAccounts = async () => {
+    try {
+      const response = await api.get<BankAccount[]>(API_ENDPOINTS.USER.BANK_ACCOUNT);
+      // Проверяем, что response - это массив
+      if (Array.isArray(response)) {
+        setBankAccounts(response);
+      } else {
+        alert('Неверный формат данных от сервера');
+      }
+    } catch (error: unknown) {
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          alert('Сессия истекла. Пожалуйста, войдите снова.');
+          await logout();
+        } else {
+          alert(error.message || 'Не удалось загрузить счета');
+        }
+      } else {
+        const message = error instanceof Error ? error.message : 'Не удалось загрузить счета';
+        alert(message);
+      }
+    } 
+  }
+
   const handleContact = () => {
     window.open(TELEGRAM_CHANNEL_URL, '_blank', 'noopener,noreferrer');
   };
@@ -117,20 +146,16 @@ export default function Dashboard() {
 
           {/* Financial Cards */}
           <div className="financial-cards">
-            <FinancialCard CardTitle="Выручка" CardValue="1.000.000$"></FinancialCard>
-            <FinancialCard CardTitle="Расходы" CardValue="500.000$"></FinancialCard>
-            <FinancialCard CardTitle="Прибыль" CardValue="250.000$"></FinancialCard>
+            <FinancialCard CardTitle="Выручка" CardValue={revenue}></FinancialCard>
+            <FinancialCard CardTitle="Расходы" CardValue={expenses}></FinancialCard>
+            <FinancialCard CardTitle="Прибыль" CardValue={profit}></FinancialCard>
           </div>
 
           {/* Bottom Section */}
           <div className="bottom-section">
+
             {/* Accounts Card */}
-            <div className="accounts-card">
-              <div className="accounts-title">Счета:</div>
-              <div className="accounts-content">
-                {/* Accounts list will be here */}
-              </div>
-            </div>
+            <AccountsCard accounts={bankAccounts} onUpdateAccounts={handleBankAccounts}></AccountsCard>
 
             {/* Empty Content Card */}
             <div className="empty-card">

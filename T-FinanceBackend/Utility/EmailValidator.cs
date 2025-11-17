@@ -2,12 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace TFinanceBackend.Utility
 {
-    public static class EmailValidator
+    public static partial class EmailValidator
     {
+        [GeneratedRegex(@"^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "ru-RU")]
+        private static partial Regex Email();
+
         // RFC 5322 совместимый regex (упрощенный)
-        private static readonly Regex EmailRegex = new(
-            @"^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex EmailRegex = Email();
 
         public static (bool IsValid, string? ErrorMessage) Validate(string? email)
         {
@@ -28,6 +29,8 @@ namespace TFinanceBackend.Utility
 
             return (true, null);
         }
+
+        
     }
 }
 

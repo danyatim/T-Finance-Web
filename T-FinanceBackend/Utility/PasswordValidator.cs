@@ -2,10 +2,23 @@ using System.Text.RegularExpressions;
 
 namespace TFinanceBackend.Utility
 {
-    public static class PasswordValidator
+    public static partial class PasswordValidator
     {
         private const int MinLength = 8;
         private const int MaxLength = 128;
+
+        [GeneratedRegex(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]")]
+        private static partial Regex Password();
+
+        [GeneratedRegex(@"[0-9]")]
+        private static partial Regex PasswordIsNumber();
+
+        [GeneratedRegex(@"[a-zа-яё]")]
+        private static partial Regex PasswordLowercaseLetters();
+
+        [GeneratedRegex(@"[A-ZА-ЯЁ]")]
+        private static partial Regex PasswordCapitalLetters();
+
 
         public static (bool IsValid, string? ErrorMessage) Validate(string? password)
         {
@@ -25,25 +38,25 @@ namespace TFinanceBackend.Utility
             }
 
             // Проверка на наличие хотя бы одной заглавной буквы
-            if (!Regex.IsMatch(password, @"[A-ZА-ЯЁ]"))
+            if (!PasswordCapitalLetters().IsMatch(password))
             {
                 return (false, "Пароль должен содержать хотя бы одну заглавную букву");
             }
 
             // Проверка на наличие хотя бы одной строчной буквы
-            if (!Regex.IsMatch(password, @"[a-zа-яё]"))
+            if (!PasswordLowercaseLetters().IsMatch(password))
             {
                 return (false, "Пароль должен содержать хотя бы одну строчную букву");
             }
 
             // Проверка на наличие хотя бы одной цифры
-            if (!Regex.IsMatch(password, @"[0-9]"))
+            if (!PasswordIsNumber().IsMatch(password))
             {
                 return (false, "Пароль должен содержать хотя бы одну цифру");
             }
 
             // Проверка на наличие хотя бы одного спецсимвола
-            if (!Regex.IsMatch(password, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+            if (!Password().IsMatch(password))
             {
                 return (false, "Пароль должен содержать хотя бы один специальный символ (!@#$%^&*()_+-=[]{};':\"\\|,.<>/?");
             }

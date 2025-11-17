@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   },
   USER: {
     PREMIUM: '/api/user/premium',
+    BANK_ACCOUNT: '/api/user/accounts'
   },
   PAYMENT: {
     CREATE: '/api/payment/create',

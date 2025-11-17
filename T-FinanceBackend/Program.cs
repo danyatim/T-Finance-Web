@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.IO;
+using DotNetEnv;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.RateLimiting;
 using TFinanceBackend.Data;
 using TFinanceBackend.Services;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,9 @@ builder.Services.AddCors(options =>
     {
         cors.WithOrigins(
                 "http://localhost:5173",
-                "https://localhost:5173"
+                "https://localhost:5173",
+                "http://192.168.0.100:5173",
+                "https://192.168.0.100:5173/"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -31,20 +34,25 @@ builder.Services.AddCors(options =>
     });
 });
 
+var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+
+var env = Env.Load(envPath);
+
+Console.WriteLine(envPath);
+
 // JWT - приоритет переменным окружения, затем конфигурации
-var jwtSection = builder.Configuration.GetSection("Jwt");
 var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
-    ?? jwtSection["Issuer"] 
     ?? throw new InvalidOperationException("JWT Issuer не настроен. Установите JWT_ISSUER в переменных окружения или appsettings.json");
+
 var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
-    ?? jwtSection["Audience"] 
     ?? throw new InvalidOperationException("JWT Audience не настроен. Установите JWT_AUDIENCE в переменных окружения или appsettings.json");
+
 var key = Environment.GetEnvironmentVariable("JWT_KEY") 
-    ?? jwtSection["Key"] 
     ?? throw new InvalidOperationException("JWT Key не настроен. Установите JWT_KEY в переменных окружения или appsettings.json");
-var expiresInHours = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRES_IN_HOURS"), out var hours) 
-    ? hours 
-    : jwtSection.GetValue<int>("ExpiresInHours", 1);
+
+var expiresInHours = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRES_IN_HOURS"), out var hours) ? hours : 1;
+
+Console.WriteLine(key);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -65,11 +73,22 @@ builder.Services.AddAuthentication(options =>
     };
     options.Events = new JwtBearerEvents
     {
-        OnMessageReceived = context =>
+        OnMessageReceived = async context =>
         {
-            if (context.Request.Cookies.TryGetValue("token", out var token))
-                context.Token = token;
-            return Task.CompletedTask;
+            if (context.Request.Cookies.TryGetValue("user_session", out var sessionId))
+            {
+                var dbContext = context.HttpContext.RequestServices.GetRequiredService<TFinanceDbContext>();
+                var session = await dbContext.Sessions
+                    .FirstOrDefaultAsync(s => s.SessionId == sessionId && s.ExpiresAt > DateTime.UtcNow);
+                if (session != null)
+                {
+                    var jwtToken = session.JWToken;
+                    if (!string.IsNullOrEmpty(jwtToken))
+                    {
+                        context.Token = jwtToken;
+                    }
+                }
+            }
         }
     };
 });
@@ -170,6 +189,9 @@ builder.Services.AddScoped<YooKassaService>();
 // Регистрация YandexMailService
 builder.Services.AddScoped<YandexMailService>();
 
+// Регистрация UserService
+builder.Services.AddScoped<UserService>();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -183,12 +205,12 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<TFinanceDbContext>();
         // Создаём базу данных и таблицы, если их нет
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Произошла ошибка при создании базы данных");
+        logger.LogError(ex, "Ошибка при применении миграций");
     }
 }
 

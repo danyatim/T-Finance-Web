@@ -9,6 +9,7 @@ publish/
 .vscode
 .vs
 .Migrations
+*.xml
 
 # Rider/VSCode
 .idea/
@@ -34,3 +35,5 @@ secrets.json
 TFinanceBackend.http
 Files/*.zip
 /Migrations
+
+/Data/DataProtection

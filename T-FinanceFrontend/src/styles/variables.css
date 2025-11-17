@@ -1,0 +1,63 @@
+
+:root {
+  /* Основные цвета - Зеленые (акцент) */
+  --color-primary: #5EC470;
+  --color-primary-hover: #6CE182;
+  --color-primary-light: rgba(108, 225, 130, 0.8);
+  
+  /* Цвета текста */
+  --color-text-primary: #333333;
+  --color-text-secondary: #666;
+  --color-text-tertiary: #999;
+  --color-text-white: #ffffff;
+  --color-text-white-dim: #ffffffde;
+  
+  /* Цвета фона */
+  --color-bg-white: #ffffff;
+  --color-bg-light: #f8f9fa;
+  --color-bg-light-hover: #f1f3f5;
+  --color-bg-dashboard: #182E59;
+  --color-bg-dashboard-dark: #0D1A35;
+  --color-bg-dashboard-darker: #050A18;
+  --color-bg-gradient-start: #142952;
+  
+  /* Цвета границ */
+  --color-border-light: #e9ecef;
+  --color-border-medium: #dee2e6;
+  --color-border-dark: rgba(255, 255, 255, 0.1);
+  
+  /* Цвета для карточек и элементов UI */
+  --color-card-bg: #ffffff;
+  --color-card-shadow: rgba(0, 0, 0, 0.2);
+  --color-card-shadow-hover: rgba(0, 0, 0, 0.3);
+  
+  /* Дополнительные цвета (для ссылок и т.д.) */
+  --color-link: #646cff;
+  --color-link-hover: #535bf2;
+  --color-link-hover-light: #747bff;
+  
+  /* Цвета для финансовых значений */
+  --color-money-positive: #5EC470;
+  --color-money-negative: #f5576c;
+  
+  /* Статусные цвета (опционально, для будущего использования) */
+  --color-success: #5EC470;
+  --color-error: #f5576c;
+  --color-warning: #fbbf24;
+  --color-info: #3b82f6;
+}
+
+/* Темная тема (для будущего использования) */
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #cccccc;
+    --color-text-tertiary: #999999;
+    --color-bg-white: #1a1a1a;
+    --color-bg-light: #2a2a2a;
+    --color-bg-light-hover: #3a3a3a;
+    --color-border-light: #404040;
+    --color-border-medium: #505050;
+  }
+} */
+

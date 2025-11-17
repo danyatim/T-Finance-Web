@@ -3,7 +3,7 @@ import './FinancialCard.css';
 
 interface FinancialCardProps {
     CardTitle: string
-    CardValue: string
+    CardValue: number
 }
 
 const FinancialCard: React.FC<FinancialCardProps> = ({CardTitle, CardValue}) =>{
@@ -11,7 +11,7 @@ const FinancialCard: React.FC<FinancialCardProps> = ({CardTitle, CardValue}) =>{
     return (
         <div className="financial-card">
             <div className="card-title">{CardTitle}</div>
-            <div className="card-value">{CardValue}</div>
+            <div className="card-value">{CardValue}₽</div>
         </div>
     )
 }

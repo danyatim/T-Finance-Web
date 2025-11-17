@@ -2,15 +2,16 @@ using System.Text.RegularExpressions;
 
 namespace TFinanceBackend.Utility
 {
-    public static class LoginValidator
+    public static partial class LoginValidator
     {
         private const int MinLength = 3;
         private const int MaxLength = 50;
 
+        [GeneratedRegex(@"^[a-zA-Z0-9_-]+$", RegexOptions.Compiled)]
+        private static partial Regex LettersNumbersHyphensUnderscores();
+
         // Разрешаем только буквы, цифры, дефис и подчеркивание
-        private static readonly Regex LoginRegex = new(
-            @"^[a-zA-Z0-9_-]+$",
-            RegexOptions.Compiled);
+        private static readonly Regex LoginRegex = LettersNumbersHyphensUnderscores();
 
         public static (bool IsValid, string? ErrorMessage) Validate(string? login)
         {
@@ -36,6 +37,8 @@ namespace TFinanceBackend.Utility
 
             return (true, null);
         }
+
+        
     }
 }
 

@@ -52,7 +52,7 @@ namespace TFinanceBackend.Services
                 amount = new
                 {
                     value = amount.ToString("F2"),
-                    currency = currency
+                    currency
                 },
                 confirmation = new
                 {
@@ -60,7 +60,7 @@ namespace TFinanceBackend.Services
                     return_url = _returnUrl
                 },
                 capture = true,
-                description = description,
+                description,
                 metadata = new
                 {
                     user_id = userId
@@ -91,12 +91,8 @@ namespace TFinanceBackend.Services
                 }
 
                 var paymentResponse = JsonSerializer.Deserialize<YooKassaPaymentResponse>(responseContent);
-                if (paymentResponse == null)
-                {
-                    throw new InvalidOperationException("Не удалось десериализовать ответ от YooKassa");
-                }
 
-                return paymentResponse;
+                return paymentResponse ?? throw new InvalidOperationException("Не удалось десериализовать ответ от YooKassa");
             }
             catch (Exception ex)
             {
@@ -125,12 +121,8 @@ namespace TFinanceBackend.Services
                 }
 
                 var paymentResponse = JsonSerializer.Deserialize<YooKassaPaymentResponse>(responseContent);
-                if (paymentResponse == null)
-                {
-                    throw new InvalidOperationException("Не удалось десериализовать ответ от YooKassa");
-                }
 
-                return paymentResponse;
+                return paymentResponse ?? throw new InvalidOperationException("Не удалось десериализовать ответ от YooKassa");
             }
             catch (Exception ex)
             {

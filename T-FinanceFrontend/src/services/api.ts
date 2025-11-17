@@ -5,6 +5,12 @@ export interface ApiResponse<T = unknown> {
   data?: T;
 }
 
+export interface BankAccount {
+  id: number;
+  name: string;
+  balance: number;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -38,14 +44,17 @@ export const api = {
         ...defaultOptions.headers,
         ...options.headers,
       },
-    });
-
+    })
+    
+    console.log(`[API] ${options.method || 'GET'} ${endpoint} - Status: ${response.status}`);
+    
     if (!response.ok) {
       let errorMessage = `HTTP Error: ${response.status}`;
       let errorData: ApiResponse | undefined;
 
       try {
         const text = await response.text();
+        console.log(`[API] Error response body:`, text);
         if (text) {
           errorData = JSON.parse(text);
           errorMessage = errorData?.message || errorMessage;
@@ -70,8 +79,11 @@ export const api = {
     }
 
     try {
-      return await response.json();
-    } catch {
+      const jsonData = await response.json();
+      console.log(`[API] Response data:`, jsonData);
+      return jsonData;
+    } catch (error) {
+      console.error(`[API] Failed to parse JSON:`, error);
       return {} as T;
     }
   },

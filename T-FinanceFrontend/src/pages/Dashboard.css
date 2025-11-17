@@ -1,8 +1,8 @@
 .dashboard-container {
   padding: 0 2rem;
   border-radius: 12px;
-  background: #0D1A35;
-  color: white;
+  background: var(--color-bg-dashboard);
+  color: var(--color-text-white);
   display: flex;
   flex-direction: column;
   font-family: 'Manrope', system-ui, sans-serif;
@@ -14,8 +14,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: #0D1A35;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-dashboard);
+  border-bottom: 1px solid var(--color-border-dark);
 }
 
 /* Navigation Tabs */
@@ -105,30 +105,11 @@
   margin-top: 0;
 }
 
-.accounts-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.accounts-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.accounts-content {
-  min-height: 200px;
-  color: #666;
-}
-
 .empty-card {
-  background: white;
+  background: var(--color-card-bg);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 15px var(--color-card-shadow);
   min-height: 200px;
 }
 
@@ -136,7 +117,7 @@
 .dashboard-footer {
   padding: 2rem;
   text-align: center;
-  background: #0D1A35;
+  background: #182E59;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.8);
 }

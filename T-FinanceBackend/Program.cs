@@ -38,7 +38,6 @@ var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
 
 var env = Env.Load(envPath);
 
-Console.WriteLine(envPath);
 
 // JWT - приоритет переменным окружения, затем конфигурации
 var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
@@ -51,8 +50,6 @@ var key = Environment.GetEnvironmentVariable("JWT_KEY")
     ?? throw new InvalidOperationException("JWT Key не настроен. Установите JWT_KEY в переменных окружения или appsettings.json");
 
 var expiresInHours = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRES_IN_HOURS"), out var hours) ? hours : 1;
-
-Console.WriteLine(key);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -219,6 +216,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
+
+// Health endpoint for orchestrators and load balancers
+// Keep this lightweight and unauthenticated; used by Docker/K8s healthchecks
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,12 +1,17 @@
 node_modules
 dist
-.git
-.gitignore
-*.md
 .env
 .env.local
-.vscode
 .DS_Store
+.git
+.gitignore
+/.vscode
+/.idea
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+/.temp
+coverage
 *.log
 
 

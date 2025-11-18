@@ -1,3 +1,17 @@
+bin
+obj
+**/bin
+**/obj
+*.user
+*.suo
+*.log
+.vs
+/.vscode
+Data/DataProtection
+*.db
+*.sqlite
+*.pdb
+publish
 **/.classpath
 **/.dockerignore
 **/.env

@@ -1,0 +1,148 @@
+# GitLab CI configuration for T-Finance-Web
+# Stages: build frontend & backend, build/push Docker images, deploy to production via SSH
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  # Docker-in-Docker settings used in docker-build-push job
+  DOCKER_DRIVER: overlay2
+
+stages:
+  - build
+  - docker
+  - deploy
+
+
+# Cache common package directories to speed up pipelines
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - T-FinanceFrontend/node_modules/
+    - .nuget/packages/
+
+frontend-build:
+  image: node:25
+  stage: build
+  tags: []
+  needs:
+    - frontend-lint
+  script:
+    - cd T-FinanceFrontend
+    - npm ci
+    - npm run build:prod
+  artifacts:
+    paths:
+      - T-FinanceFrontend/dist
+    expire_in: 1h
+  cache:
+    key: "frontend-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - T-FinanceFrontend/node_modules/
+
+frontend-lint:
+  image: node:25
+  stage: build
+  script:
+    - cd T-FinanceFrontend
+    - npm ci --no-audit --no-fund
+    - npm run lint
+  allow_failure: false
+  cache:
+    key: "frontend-lint-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - T-FinanceFrontend/node_modules/
+
+
+backend-build:
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  stage: build
+  needs:
+    - backend-test
+  script:
+    - dotnet restore T-FinanceBackend/TFinanceBackend.csproj
+    - dotnet publish T-FinanceBackend/TFinanceBackend.csproj -c Release -o T-FinanceBackend/publish
+  artifacts:
+    paths:
+      - T-FinanceBackend/publish
+    expire_in: 1h
+  cache:
+    paths:
+      - .nuget/packages/
+
+backend-test:
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  stage: build
+  script:
+    - |
+      echo "Searching for test projects..."
+      set -e
+      cd .
+      TESTS=$(find . -type f \( -name "*Tests*.csproj" -o -name "*Test*.csproj" \) -print | tr '\n' ' ')
+      if [ -z "$TESTS" ]; then
+        echo "No backend test projects found, skipping tests."
+        exit 0
+      fi
+      for p in $TESTS; do
+        echo "Running tests for $p"
+        dotnet test "$p" --no-build --verbosity minimal
+      done
+  allow_failure: false
+  cache:
+    paths:
+      - .nuget/packages/
+
+docker-build-push:
+  image: docker:24
+  services:
+    - name: docker:24-dind
+      alias: docker
+  stage: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker info
+  script:
+    # Login to GitLab registry (CI provides CI_REGISTRY, CI_REGISTRY_USER, CI_REGISTRY_PASSWORD)
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    # Build and push backend image
+    - docker build -t $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA -f T-FinanceBackend/Dockerfile T-FinanceBackend
+    - docker push $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA
+    # Build and push frontend image
+    - docker build --build-arg NODE_VERSION=25 -t $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA -f T-FinanceFrontend/Dockerfile T-FinanceFrontend
+    - docker push $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA
+    # Tag latest
+    - docker tag $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/backend:latest
+    - docker push $CI_REGISTRY_IMAGE/backend:latest
+    - docker tag $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/frontend:latest
+    - docker push $CI_REGISTRY_IMAGE/frontend:latest
+  only:
+    refs:
+      - main
+      - tags
+
+deploy-ssh:
+  image: alpine:latest
+  stage: deploy
+  before_script:
+    - apk add --no-cache openssh-client rsync
+  script:
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+    # Copy docker-compose and other deployment files to server
+    - rsync -avz --delete --exclude ".git" docker-compose.prod.yml $SERVER_USER@"$SERVER_HOST":$DEPLOY_PATH/
+    - ssh $SERVER_USER@"$SERVER_HOST" "cd $DEPLOY_PATH && docker compose pull && docker compose up -d --remove-orphans"
+  only:
+    - main
+  environment:
+    name: production
+    url: https://t-finance-web.ru
+
+# Required CI/CD variables (set in GitLab project settings -> CI/CD -> Variables):
+# - SSH_PRIVATE_KEY: private key for deployment user (no passphrase or use ssh-agent)
+# - SERVER_HOST: IP or hostname of the Ubuntu server
+# - SERVER_USER: SSH user on server
+# - DEPLOY_PATH: path on server where docker-compose.prod.yml should be deployed (e.g. /home/deploy/t-finance)
+# - CI_REGISTRY (provided by GitLab), CI_REGISTRY_USER, CI_REGISTRY_PASSWORD (provided by GitLab)

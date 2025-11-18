@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./T-FinanceBackend
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: t-finance-backend:prod
+    container_name: t_finance_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # JWT and other secrets should be provided via environment or secret manager
+      # - JWT_ISSUER=...
+      # - JWT_AUDIENCE=...
+      # - JWT_KEY=...
+    volumes:
+      - ./T-FinanceBackend/Data:/app/Data:rw
+    networks:
+      - tfinance-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./T-FinanceFrontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    image: t-finance-frontend:prod
+    container_name: t_finance_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    volumes:
+      # Mount existing certs into nginx
+      - ./ssl:/etc/nginx/ssl:ro
+    environment:
+      - VITE_BASE_PATH=/
+    networks:
+      - tfinance-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  tfinance-net:
+    driver: bridge
+
+volumes:
+  # Persistent storage for backend data (if you prefer named volumes)
+  tfinance-data: {}

@@ -20,3 +20,16 @@ certs/*.key
 certs/*.crt
 !certs/.gitkeep
 
+# Common build & IDE artifacts
+node_modules/
+dist/
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+*.db
+publish/
+
